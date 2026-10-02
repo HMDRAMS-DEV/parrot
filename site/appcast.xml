@@ -7,6 +7,15 @@
     <language>en</language>
     <!-- releases -->
     <item>
+      <title>Parrot 0.1.1</title>
+      <pubDate>Fri, 02 Oct 2026 15:54:43 +0000</pubDate>
+      <sparkle:version>2</sparkle:version>
+      <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Adds a Settings window (gear menu or ⌘,). The Models tab shows what each speech model takes on disk and deletes the ones you don't use.</p>]]></description>
+      <enclosure url="https://github.com/HMDRAMS-DEV/parrot/releases/download/v0.1.1/Parrot.dmg" type="application/octet-stream" sparkle:edSignature="GaBPr0Kga6T8VabVyRKmFS82VX1NU6rh9iSUCvmdhseiRQngeB4v+Saxf2yKwDLO2cgiCrbISobOm1IuwXTyAQ==" length="22981991"/>
+    </item>
+    <item>
       <title>Parrot 0.1.0</title>
       <pubDate>Fri, 02 Oct 2026 15:33:56 +0000</pubDate>
       <sparkle:version>1</sparkle:version>
