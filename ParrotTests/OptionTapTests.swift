@@ -86,6 +86,17 @@ struct WakeWordTests {
         #expect(WakeWord.match("Hey, carrot!") == "")
     }
 
+    // The start of the utterance already matched, so the full transcript is kept even when the
+    // model hears the wake word differently or leaves it out.
+    @Test func keepsLongDictationsWhoseWakeWordWasMisheard() {
+        #expect(WakeWord.rest(of: "Oy, tell Sam the deck is ready.", heardStart: "tell") == "Tell Sam the deck is ready.")
+        #expect(WakeWord.rest(of: "Tell Sam the deck is ready.", heardStart: "tell") == "Tell Sam the deck is ready.")
+        #expect(WakeWord.rest(of: "Oh, tell Sam the deck is ready.", heardStart: "tell Sam") == "Tell Sam the deck is ready.")
+        #expect(WakeWord.rest(of: "Oh, tell Sam the deck is ready.", heardStart: "") == "Tell Sam the deck is ready.")
+        #expect(WakeWord.rest(of: "I think the deck is ready.", heardStart: "") == "I think the deck is ready.")
+        #expect(WakeWord.rest(of: "Send the notes.", heardStart: "", word: "Jarvis") == "Send the notes.")
+    }
+
     @Test func soundAlikesNeedToStandAlone() {
         #expect(WakeWord.match("Parents are visiting this weekend.") == nil)
     }

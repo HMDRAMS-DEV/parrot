@@ -27,8 +27,8 @@ targets:
       path: Parrot/Info.plist
       properties:
         CFBundleDisplayName: Parrot
-        CFBundleShortVersionString: "0.1.1"
-        CFBundleVersion: "2"
+        CFBundleShortVersionString: "0.1.2"
+        CFBundleVersion: "3"
         SUFeedURL: https://parrot.ramihmd.com/appcast.xml
         SUPublicEDKey: qOxwZqP7ofp2K4TUTCMqAA5P8EF/sbNrcEubiWKNHTE=
         SUEnableAutomaticChecks: true

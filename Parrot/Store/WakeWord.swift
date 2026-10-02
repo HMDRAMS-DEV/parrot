@@ -69,4 +69,48 @@ enum WakeWord {
         let words = rest.drop { !$0.isLetter && !$0.isNumber }.trimmingCharacters(in: .whitespacesAndNewlines)
         return words.prefix(1).uppercased() + words.dropFirst()
     }
+
+    /// What to type from a whole utterance whose start already matched the wake word, with
+    /// `heardStart` being what came after the wake word then. Over a long utterance the model
+    /// often spells the wake word differently ("Oh") or leaves it out, so the utterance is kept
+    /// either way: a misheard wake word is dropped, and anything else is typed in full.
+    static func rest(of text: String, heardStart: String, word: String = standard) -> String {
+        if let rest = match(text, word: word) { return rest }
+        let all = WordErrorRate.words(text)
+        // Line the transcript up with what followed the wake word the first time.
+        if let anchor = WordErrorRate.words(heardStart).first, let at = all.prefix(3).firstIndex(of: anchor) {
+            return dropping(at, wordsFrom: text)
+        }
+        // A short word one letter off a known spelling, like "Oh" for "Oy". Not "I" or "a", which
+        // usually start the sentence itself.
+        let (known, _) = spellings(for: word)
+        if let first = all.first, (2...4).contains(first.count), known.contains(where: { oneEditApart($0, first) }) {
+            return dropping(1, wordsFrom: text)
+        }
+        return dropping(0, wordsFrom: text)
+    }
+
+    /// `text` without its first `count` words, capitalized.
+    private static func dropping(_ count: Int, wordsFrom text: String) -> String {
+        var rest = Substring(text)
+        for _ in 0..<count {
+            rest = rest.drop { !$0.isLetter && !$0.isNumber }
+            rest = rest.dropFirst(rest.prefix { $0.isLetter || $0.isNumber || $0 == "'" }.count)
+        }
+        let words = rest.drop { !$0.isLetter && !$0.isNumber }.trimmingCharacters(in: .whitespacesAndNewlines)
+        return words.prefix(1).uppercased() + words.dropFirst()
+    }
+
+    private static func oneEditApart(_ a: String, _ b: String) -> Bool {
+        let b = Array(b)
+        var row = Array(0...b.count)
+        for (i, x) in a.enumerated() {
+            var next = [i + 1]
+            for (j, y) in b.enumerated() {
+                next.append(min(row[j + 1] + 1, next[j] + 1, row[j] + (x == y ? 0 : 1)))
+            }
+            row = next
+        }
+        return row[b.count] <= 1
+    }
 }

@@ -106,8 +106,9 @@ final class ParrotStore {
     @ObservationIgnored private var screenAway = false
     @ObservationIgnored private var awaitingTimeout: Task<Void, Never>?
     /// The utterance being checked for the wake word before it ends, by its start time.
-    /// `settled` once it woke Parrot, clearly didn't, or ended.
-    @ObservationIgnored private var early: (start: Date, settled: Bool, checking: Bool)?
+    /// `settled` once it woke Parrot, clearly didn't, or ended. `heard` is what followed the wake
+    /// word once it woke Parrot.
+    @ObservationIgnored private var early: (start: Date, settled: Bool, checking: Bool, heard: String?)?
     /// The utterance that woke Parrot early, then was cancelled. Its ending is ignored.
     @ObservationIgnored private var cancelledStart: Date?
     @ObservationIgnored private let capture = CallCapture()
@@ -298,7 +299,7 @@ final class ParrotStore {
     /// as the wake word is said instead of after the pause.
     private func heardPartial(_ partial: WakeListener.Utterance) {
         guard phase == .idle else { return }
-        if early?.start != partial.startedAt { early = (partial.startedAt, false, false) }
+        if early?.start != partial.startedAt { early = (partial.startedAt, false, false, nil) }
         guard let current = early, !current.settled, !current.checking else { return }
         early?.checking = true
         Task {
@@ -306,8 +307,9 @@ final class ParrotStore {
             // The utterance may have ended, or another begun, while this ran.
             guard early?.start == partial.startedAt, early?.settled == false else { return }
             early?.checking = false
-            if WakeWord.match(text, word: wakeWord) != nil, phase == .idle {
+            if let rest = WakeWord.match(text, word: wakeWord), phase == .idle {
                 early?.settled = true
+                early?.heard = rest
                 phase = .hearing(since: .now)
                 Sound.start.play()
             } else if WordErrorRate.words(text).count >= 2 {
@@ -329,14 +331,14 @@ final class ParrotStore {
         switch phase {
         case .hearing:
             guard wokeEarly else { return }
-            Task { await transcribeHandsFree(utterance, wake: true, soundPlayed: true) }
+            Task { await transcribeHandsFree(utterance, heardStart: early?.heard ?? "") }
         case .idle:
             Task { await checkForWakeWord(utterance) }
         case .awaitingWords(let since):
             // Skip anything that began before the wake word was confirmed, like Parrot's own coo.
             guard utterance.startedAt > since.addingTimeInterval(0.3) else { return }
             awaitingTimeout?.cancel()
-            Task { await transcribeHandsFree(utterance, wake: false) }
+            Task { await transcribeHandsFree(utterance) }
         case .recording, .transcribing:
             break
         }
@@ -353,7 +355,7 @@ final class ParrotStore {
         if rest.isEmpty && head.count == utterance.samples.count {
             awaitWords(playSound: true)
         } else {
-            await transcribeHandsFree(utterance, wake: true)
+            await transcribeHandsFree(utterance, heardStart: rest)
         }
     }
 
@@ -369,25 +371,23 @@ final class ParrotStore {
         }
     }
 
-    private func transcribeHandsFree(_ utterance: WakeListener.Utterance, wake: Bool, soundPlayed: Bool = false) async {
+    /// - Parameter heardStart: what followed the wake word at the utterance's start. nil when the
+    ///   wake word came in an earlier utterance, said on its own.
+    private func transcribeHandsFree(_ utterance: WakeListener.Utterance, heardStart: String? = nil) async {
         phase = .transcribing
         let id = engineID
         let clock = ContinuousClock.now
         do {
             var text = try await engine(id).transcribe(utterance.samples).trimmingCharacters(in: .whitespacesAndNewlines)
-            if wake {
-                // The whole utterance can read differently from its start, like "Oil prices…"
-                // after a partial "Oi". Then it wasn't for Parrot after all.
-                guard let rest = WakeWord.match(text, word: wakeWord) else {
-                    phase = .idle
-                    if soundPlayed { Sound.cancel.play() }
-                    return
-                }
-                text = rest
+            if let heardStart {
+                // The start already matched, so keep the dictation even if the whole utterance
+                // hears the wake word differently. Long ones often do.
+                text = WakeWord.rest(of: text, heardStart: heardStart, word: wakeWord)
             }
             guard !text.isEmpty else {
-                // Woke early on the wake word said on its own: keep waiting for the words.
-                if soundPlayed { awaitWords(playSound: false) } else { phase = .idle }
+                // The wake word said on its own: wait for the words. The start sound already
+                // played if it woke Parrot before the pause.
+                if heardStart != nil { awaitWords(playSound: early?.start != utterance.startedAt || early?.heard == nil) } else { phase = .idle }
                 return
             }
             defer { phase = .idle }
