@@ -528,6 +528,18 @@ final class ParrotStore {
         }
     }
 
+    /// Unloads a model and deletes its download to free memory and disk. The model in use and one
+    /// that's still loading stay, since deleting them would only start the download again.
+    func deleteModel(_ id: EngineID) throws {
+        guard id != engineID, engineStates[id] != .loading, let folder = id.downloadFolder else { return }
+        engines[id] = nil
+        loads[id] = nil
+        engineStates[id] = nil
+        if FileManager.default.fileExists(atPath: folder.path) {
+            try FileManager.default.removeItem(at: folder)
+        }
+    }
+
     /// Loads the engine in the background, so the first dictation doesn't wait on a download.
     func warm(_ id: EngineID) {
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }

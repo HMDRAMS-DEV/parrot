@@ -24,7 +24,7 @@ Dictation from the menu bar. Say "Oy" or tap Option, speak, and Parrot turns you
 | Parakeet v2 | 2025, NVIDIA | English | |
 | Apple Speech | macOS 26 | System language | Built in. No download. |
 
-The Parakeet family runs on the Neural Engine through [FluidAudio](https://github.com/FluidInference/FluidAudio). Models download once to `~/Library/Application Support/FluidAudio/Models`.
+The Parakeet family runs on the Neural Engine through [FluidAudio](https://github.com/FluidInference/FluidAudio). Models download once to `~/Library/Application Support/FluidAudio/Models`. Each downloads the first time you pick it. **Settings > Models** (Settings in the popover footer, or ⌘,) shows what each takes on disk and deletes the ones you don't use, which also unloads them from memory. The model in use can't be deleted.
 
 ### Adding a model
 

@@ -35,6 +35,11 @@ struct ParrotApp: App {
         }
         .defaultSize(width: 560, height: 440)
         .defaultPosition(.center)
+
+        Settings {
+            SettingsView()
+                .environment(store)
+        }
     }
 }
 

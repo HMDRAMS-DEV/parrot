@@ -13,6 +13,7 @@ struct MenuBarLabel: View {
 struct PopoverView: View {
     @Environment(ParrotStore.self) private var store
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
     @State private var copies = 0
 
     var body: some View {
@@ -112,6 +113,8 @@ struct PopoverView: View {
             Button("Vocabulary") { open(WindowID.vocabulary) }
             Spacer()
             Menu {
+                Button("Settings…") { showSettings() }
+                    .keyboardShortcut(",")
                 Button("Check for Updates…") { Updater.shared.check() }
                 Button("Open Eval Folder") { NSWorkspace.shared.open(History.evalSet.creatingDirectory()) }
                 Button("Open Wake Log") { NSWorkspace.shared.open(WakeLog.file) }
@@ -119,7 +122,7 @@ struct PopoverView: View {
                 Divider()
                 Button("Quit Parrot") { NSApp.terminate(nil) }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                Image(systemName: "gearshape")
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
@@ -132,6 +135,12 @@ struct PopoverView: View {
     private func open(_ id: String) {
         openWindow(id: id)
         NSApp.activate()
+    }
+
+    private func showSettings() {
+        // A menu bar app isn't active, so bring it forward or the window opens behind others.
+        NSApp.activate()
+        openSettings()
     }
 }
 
@@ -168,7 +177,7 @@ private struct StatusText: View {
     }
 }
 
-private struct EnginePicker: View {
+struct EnginePicker: View {
     @Environment(ParrotStore.self) private var store
 
     var body: some View {
@@ -203,7 +212,7 @@ private struct EnginePicker: View {
 }
 
 /// The microphone, and whether to listen for the wake word all the time.
-private struct HandsFreeTile: View {
+struct HandsFreeTile: View {
     @Environment(ParrotStore.self) private var store
 
     var body: some View {
@@ -253,6 +262,7 @@ private struct HandsFreeTile: View {
 private struct CallTile: View {
     @Environment(ParrotStore.self) private var store
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {

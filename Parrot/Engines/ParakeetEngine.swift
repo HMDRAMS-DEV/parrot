@@ -60,3 +60,30 @@ actor ParakeetEngine: TranscriptionEngine {
         }
     }
 }
+
+extension EngineID {
+    /// Where FluidAudio keeps this model's download. nil for models that ship with macOS.
+    var downloadFolder: URL? {
+        let version: AsrModelVersion
+        switch self {
+        case .parakeetUltra: version = .ultra
+        case .phonon2: version = .phonon2
+        case .parakeetRedux: version = .redux
+        case .parakeetV3: version = .v3
+        case .parakeetV2: version = .v2
+        case .apple: return nil
+        }
+        return AsrModels.defaultCacheDirectory(for: version)
+    }
+
+    /// Bytes the download takes on disk, or nil when it isn't downloaded.
+    var downloadedBytes: Int64? {
+        guard let folder = downloadFolder, FileManager.default.fileExists(atPath: folder.path) else { return nil }
+        let files = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.totalFileAllocatedSizeKey])
+        var total: Int64 = 0
+        while let file = files?.nextObject() as? URL {
+            total += Int64((try? file.resourceValues(forKeys: [.totalFileAllocatedSizeKey]))?.totalFileAllocatedSize ?? 0)
+        }
+        return total
+    }
+}
