@@ -1,0 +1,7 @@
+Parrot.xcodeproj/
+xcuserdata/
+DerivedData/
+build/
+.DS_Store
+site/.vercel/
+site/downloads/

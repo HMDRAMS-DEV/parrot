@@ -1,0 +1,76 @@
+name: Parrot
+options:
+  bundleIdPrefix: dev.parrot
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.10.0"
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio
+    from: "0.17.5"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+targets:
+  Parrot:
+    type: application
+    platform: macOS
+    sources: [Parrot]
+    dependencies:
+      - package: Sparkle
+      - package: FluidAudio
+    info:
+      path: Parrot/Info.plist
+      properties:
+        CFBundleDisplayName: Parrot
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        SUFeedURL: https://parrot.ramihmd.com/appcast.xml
+        SUPublicEDKey: qOxwZqP7ofp2K4TUTCMqAA5P8EF/sbNrcEubiWKNHTE=
+        SUEnableAutomaticChecks: true
+        LSUIElement: true
+        LSApplicationCategoryType: public.app-category.productivity
+        NSMicrophoneUsageDescription: Parrot listens while you dictate, then turns your speech into text on this Mac.
+        NSAudioCaptureUsageDescription: Parrot records the other side of a call so it can write a transcript and summary on this Mac.
+        NSSpeechRecognitionUsageDescription: Parrot can use Apple's on-device speech recognizer to turn your speech into text.
+        NSHumanReadableCopyright: "MIT License"
+    entitlements:
+      path: Parrot/Parrot.entitlements
+      properties:
+        com.apple.security.device.audio-input: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.parrot.Parrot
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Signed with the Developer ID even in Debug, so macOS keeps the Accessibility grant across
+        # rebuilds. An ad hoc signature changes with every build and macOS forgets the grant.
+        CODE_SIGN_IDENTITY: "Developer ID Application"
+        DEVELOPMENT_TEAM: 8Z6WRF99H5
+        CODE_SIGN_STYLE: Manual
+        ENABLE_APP_SANDBOX: NO
+      configs:
+        Release:
+          ENABLE_HARDENED_RUNTIME: YES
+          OTHER_CODE_SIGN_FLAGS: --timestamp
+  ParrotTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [ParrotTests]
+    dependencies:
+      - target: Parrot
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+schemes:
+  Parrot:
+    build:
+      targets:
+        Parrot: all
+    test:
+      targets: [ParrotTests]
