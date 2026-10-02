@@ -34,7 +34,7 @@ struct WakeListenerCheck {
         print("Utterances:", texts)
 
         #expect(texts.count == 4)
-        let matches = texts.compactMap(WakeWord.match)
+        let matches = texts.compactMap { WakeWord.match($0) }
         #expect(matches.count == 2)
         #expect(matches.first?.hasPrefix("Send Sarah the deck before lunch") == true)
         #expect(matches.last == "")

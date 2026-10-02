@@ -1,10 +1,11 @@
 # Parrot
 
-Dictation from the menu bar. Tap Option, speak, tap Option again. Parrot turns your speech into text on this Mac and pastes it into the field you're typing in.
+Dictation from the menu bar. Say "Oy" or tap Option, speak, and Parrot turns your speech into text on this Mac and pastes it into the field you're typing in. [parrot.ramihmd.com](https://parrot.ramihmd.com)
 
 ## What you get
 
-- **Tap Option to start and stop.** A short sound plays and a red dot appears on the bird in the menu bar while Parrot listens. A hollow dot means it's writing the text down. Option-shortcuts and Option-clicks still work, because only a quick tap of Option on its own counts.
+- **Say the wake word.** Turn on **Listen for "Oy"** in the popover and pick a microphone. Start a sentence with "Oy" and Parrot types the rest when you pause for a second. Only the start of a sentence counts, so mentioning a parrot mid-sentence doesn't trigger it. "Parrot" also works, or pick your own word.
+- **Tap Option to start and stop.** A short sound plays and a red dot appears on the parrot in the menu bar while Parrot listens. A hollow dot means it's writing the text down. Option-shortcuts and Option-clicks still work, because only a quick tap of Option on its own counts.
 - **Paste where you are.** Parrot copies the text, presses Command-V for you, then puts your clipboard back. Clipboard managers skip the dictation.
 - **History.** Every dictation, searchable, with the model used, recording length, and how long the text took.
 - **Local models, your pick.** Parakeet Ultra by default. Switch in the popover.
@@ -70,8 +71,6 @@ The app icon is drawn in code. Edit `scripts/render-icon.swift` and run `swift s
 ## Updates and releases
 
 Same as Pacer. The app checks `https://parrot.ramihmd.com/appcast.xml` with [Sparkle](https://sparkle-project.org), using the same signing key as Pacer and Redpen. `scripts/make-dmg.sh` builds a signed disk image. `scripts/release.sh "notes"` notarizes it, publishes the GitHub release to `HMDRAMS-DEV/parrot`, adds it to `site/appcast.xml`, and deploys the site.
-
-Before the first release: create the `HMDRAMS-DEV/parrot` repository, add a `site/index.html`, and link `site/` to a Vercel project on `parrot.ramihmd.com`.
 
 ## License
 

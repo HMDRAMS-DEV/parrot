@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parrot</title>
+<meta name="description" content="Free, open-source dictation for the Mac menu bar. Say “Oy” or tap Option, speak, and Parrot types your words where you're typing. Everything runs on your Mac.">
+<meta property="og:title" content="Parrot">
+<meta property="og:description" content="Say “Oy”, then just talk. Dictation that runs on your Mac.">
+<meta property="og:image" content="/assets/icon.png">
+<link rel="icon" href="/assets/favicon.png" media="(prefers-color-scheme: light)">
+<link rel="icon" href="/assets/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="/assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFFFFF; --panel: #F5EEE2; --card: #FFFFFF; --ink: #111111; --muted: #6F6A64; --faint: #B5AEA5; --line: #E6DFD3;
+    --button: #111111; --button-ink: #FFFFFF;
+    --blue: #3B5BA9; --yellow: #E8B04B; --red: #C8452C; --tail: #A8361F; --eye: #F7F1E6; --pupil: #1E2235;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171F; --panel: #22263A; --card: #2B3048; --ink: #F5F1EA; --muted: #A29D96; --faint: #5E5A55; --line: #2E3247;
+      --button: #F5F1EA; --button-ink: #15171F;
+      color-scheme: dark;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--yellow); color: #111; }
+
+  .nav { display: flex; justify-content: space-between; align-items: center; padding: 25px 46px 0; font-size: 16px; }
+  .nav-brand { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  .nav-brand img { width: 24px; height: 24px; }
+  .nav-brand picture { display: contents; }
+  .nav-source { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--muted); transition: color .2s, background .2s; }
+  .nav-source:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  .gh { width: 20px; height: 20px; }
+
+  /* Banner: the parrot over its own wing bands. */
+  .banner { position: relative; max-width: 1180px; margin: 40px auto 0; padding: 0 46px; }
+  .banner-inner { position: relative; overflow: hidden; border-radius: 32px; background: var(--panel); display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; min-height: 520px; }
+  .banner-copy { padding: 64px 0 64px 64px; position: relative; z-index: 1; }
+  .banner h1 { margin: 0; font-size: 68px; line-height: 70px; font-weight: 700; letter-spacing: -0.03em; }
+  .banner h1 em { font-style: normal; color: var(--red); }
+  .banner .sub { margin: 20px 0 0; max-width: 460px; font-size: 21px; line-height: 30px; color: var(--muted); }
+  .buttons { display: flex; gap: 12px; margin-top: 40px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; height: 50px; padding: 0 26px; border-radius: 999px; font-size: 15px; font-weight: 500; white-space: nowrap; transition: transform .2s var(--ease); }
+  .btn:hover { transform: scale(1.03); }
+  .btn:active { transform: scale(.97); }
+  .btn svg { width: 18px; height: 18px; }
+  .btn-get { background: var(--button); color: var(--button-ink); }
+  .btn-secondary { border: 1.5px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+  .note { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
+  .bird { width: 100%; max-width: 470px; justify-self: center; margin-right: 40px; }
+  .bird .part { transform-box: fill-box; }
+  @media (prefers-reduced-motion: no-preference) {
+    .bird .wing { transform-origin: 50% 0; animation: open 1.2s var(--ease) both; }
+    .bird .wing:nth-of-type(2) { animation-delay: .08s; }
+    .bird .wing:nth-of-type(3) { animation-delay: .16s; }
+    .bird .rest { animation: rise .9s var(--ease) .25s both; }
+    @keyframes open { from { transform: scale(.2); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes rise { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  }
+
+  /* Wake word demo. */
+  .section { max-width: 1180px; margin: 0 auto; padding: 120px 46px 0; }
+  .label { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); }
+  .section h2 { margin: 14px 0 0; font-size: 44px; line-height: 48px; font-weight: 700; letter-spacing: -0.025em; }
+  .lede { margin: 16px 0 0; max-width: 560px; font-size: 19px; line-height: 28px; color: var(--muted); }
+  .wake { display: grid; grid-template-columns: 1fr 1.15fr; gap: 72px; align-items: center; }
+  .steps { list-style: none; padding: 0; margin: 32px 0 0; display: grid; gap: 18px; counter-reset: step; }
+  .steps li { position: relative; padding-left: 44px; font-size: 16px; line-height: 24px; color: var(--muted); counter-increment: step; }
+  .steps li b { color: var(--ink); font-weight: 600; }
+  .steps li::before { content: counter(step); position: absolute; left: 0; top: -2px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; background: var(--blue); }
+  .steps li:nth-child(2)::before { background: var(--yellow); color: #111; }
+  .steps li:nth-child(3)::before { background: var(--red); }
+
+  .demo { border-radius: 28px; background: var(--panel); padding: 40px; display: grid; gap: 22px; min-height: 420px; align-content: center; }
+  .menubar { display: flex; justify-content: flex-end; align-items: center; gap: 14px; height: 30px; padding: 0 14px; border-radius: 9px; background: color-mix(in srgb, var(--card) 70%, transparent); font-size: 12px; color: var(--muted); }
+  .menubar svg { width: 18px; height: 16px; color: var(--ink); }
+  .glyph { position: relative; display: inline-flex; }
+  .glyph i { position: absolute; right: -4px; bottom: -2px; width: 7px; height: 7px; border-radius: 50%; background: #E5432D; box-shadow: 0 0 0 1.5px var(--card); transform: scale(0); transition: transform .3s var(--ease); }
+  .demo[data-step="hear"] .glyph i, .demo[data-step="write"] .glyph i { transform: scale(1); }
+  .demo[data-step="write"] .glyph i { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .status { justify-self: start; display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px; border-radius: 999px; background: var(--card); font-size: 13px; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+  .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+  .demo[data-step="hear"] .status::before { background: #E5432D; }
+  .demo[data-step="write"] .status::before { background: var(--yellow); }
+  .said { min-height: 64px; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em; }
+  .said .w { opacity: .18; transition: opacity .25s ease; }
+  .said .w.on { opacity: 1; }
+  .said .wake-w { color: var(--red); }
+  .field { border-radius: 14px; background: var(--card); padding: 16px 18px; font-size: 16px; line-height: 24px; min-height: 92px; box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent); }
+  .field small { display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+  .caret { display: inline-block; width: 2px; height: 18px; vertical-align: -3px; background: var(--blue); animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Features. */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 44px; }
+  .card { border-radius: 24px; background: var(--panel); padding: 30px; }
+  .card h3 { margin: 0; font-size: 20px; line-height: 26px; font-weight: 700; letter-spacing: -0.01em; }
+  .card p { margin: 10px 0 0; font-size: 15px; line-height: 23px; color: var(--muted); }
+  .kbd { display: inline-grid; place-items: center; min-width: 26px; height: 24px; padding: 0 6px; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--card); box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 16%, transparent); }
+
+  .footer { display: flex; align-items: center; justify-content: space-between; gap: 30px; max-width: 1180px; margin: 0 auto; padding: 140px 46px 90px; }
+  .footer-brand { display: flex; align-items: center; gap: 18px; }
+  .footer-brand img { width: 72px; height: 72px; }
+  .footer-brand picture { display: contents; }
+  .footer-brand span { font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+  .footer-brand small { display: block; margin-top: 4px; font-size: 14px; color: var(--muted); }
+  .footer-brand small a { text-decoration: underline; text-underline-offset: 3px; }
+  .footer .buttons { margin-top: 0; }
+
+  @media (max-width: 900px) {
+    .nav { padding: 20px 16px 0; }
+    .banner, .section { padding-left: 16px; padding-right: 16px; }
+    .banner { margin-top: 24px; }
+    .banner-inner { grid-template-columns: 1fr; min-height: 0; }
+    .banner-copy { padding: 36px 24px 0; }
+    .banner h1 { font-size: 44px; line-height: 48px; }
+    .banner .sub { font-size: 18px; line-height: 26px; }
+    .bird { max-width: 320px; margin: 10px auto 24px; }
+    .section { padding-top: 80px; }
+    .section h2 { font-size: 32px; line-height: 36px; }
+    .wake { grid-template-columns: 1fr; gap: 36px; }
+    .demo { padding: 24px; min-height: 0; }
+    .said { font-size: 20px; line-height: 28px; }
+    .grid { grid-template-columns: 1fr; }
+    .footer { flex-direction: column; align-items: flex-start; padding: 90px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <a class="nav-brand" href="/"><picture><source srcset="/assets/icon-dark.png" media="(prefers-color-scheme: dark)"><img src="/assets/icon.png" alt=""></picture>Parrot</a>
+    <a class="nav-source" href="https://github.com/HMDRAMS-DEV/parrot" aria-label="Parrot on GitHub" title="Source on GitHub"><svg class="gh" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
+  </nav>
+
+  <header class="banner">
+    <div class="banner-inner">
+      <div class="banner-copy">
+        <h1>Say <em>“Oy”</em>.<br>Then just talk.</h1>
+        <p class="sub">Dictation from your Mac's menu bar. Parrot turns your speech into text on your Mac and types it wherever you're typing.</p>
+        <div class="buttons">
+          <a class="btn btn-get" href="https://github.com/HMDRAMS-DEV/parrot/releases/latest/download/Parrot.dmg">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12m0 0l-5-5m5 5l5-5M5 20h14"/></svg><span>Download for Mac</span>
+          </a>
+          <a class="btn btn-secondary" href="https://github.com/HMDRAMS-DEV/parrot"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>Source on GitHub</span></a>
+        </div>
+        <p class="note">Free and open source. macOS 26 or later.</p>
+      </div>
+      <!-- The same circles and quarter circles as the app icon, from scripts/render-icon.swift. -->
+      <svg class="bird" viewBox="232 242 560 550" role="img" aria-label="Parrot's geometric parrot">
+        <path class="part wing" fill="var(--blue)" d="M242 452A270 270 0 0 0 782 452Z"/>
+        <path class="part wing" fill="var(--yellow)" d="M297 452A215 215 0 0 0 727 452Z"/>
+        <path class="part wing" fill="var(--red)" d="M352 452A160 160 0 0 0 672 452Z"/>
+        <g class="part rest">
+          <path fill="var(--tail)" d="M422 592L422 782A190 190 0 0 0 612 592Z"/>
+          <rect fill="var(--red)" x="422" y="342" width="180" height="250"/>
+          <path fill="var(--red)" d="M422 342A90 90 0 0 1 602 342Z"/>
+          <path fill="var(--red)" d="M422 342L512 342A90 90 0 0 0 422 252Z"/>
+          <path fill="var(--yellow)" d="M602 432L722 432A120 120 0 0 0 602 312Z"/>
+          <circle fill="var(--eye)" cx="544" cy="337" r="50"/>
+          <circle fill="var(--pupil)" cx="552" cy="337" r="22"/>
+        </g>
+      </svg>
+    </div>
+  </header>
+
+  <section class="section wake">
+    <div>
+      <p class="label">Hands-free</p>
+      <h2>Wake it with a word.</h2>
+      <p class="lede">Turn on <b>Listen for “Oy”</b> and Parrot listens on the microphone you pick. Start a sentence with the wake word and it types the rest.</p>
+      <ol class="steps">
+        <li><b>Say “Oy”</b> at the start of a sentence. Saying it mid-sentence doesn't count, so talking about parrots won't set it off.</li>
+        <li><b>Keep talking.</b> A soft sound plays and a red dot appears on the parrot in the menu bar.</li>
+        <li><b>Pause for a second.</b> Parrot writes it down on your Mac and types it into the field you're in.</li>
+      </ol>
+      <p class="lede" style="font-size:15px; line-height:23px">Prefer another word? Pick any word in settings. “Parrot” works too.</p>
+    </div>
+    <div class="demo" data-step="idle" aria-hidden="true">
+      <div class="menubar">
+        <span>Wed 9:41</span>
+        <span class="glyph"><svg viewBox="232 242 560 550" fill="currentColor"><path d="M242 452A270 270 0 0 0 782 452Z"/><path d="M422 592L422 782A190 190 0 0 0 612 592Z"/><rect x="422" y="342" width="180" height="250"/><path d="M422 342A90 90 0 0 1 602 342Z"/><path d="M422 342L512 342A90 90 0 0 0 422 252Z"/><path d="M602 432L722 432A120 120 0 0 0 602 312Z"/></svg><i></i></span>
+      </div>
+      <span class="status">Listening for “Oy”</span>
+      <div class="said"></div>
+      <div class="field"><small>Messages</small><span class="typed"></span><span class="caret"></span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <p class="label">How it works</p>
+    <h2>Everything stays on your Mac.</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Tap <span class="kbd">⌥</span> to start and stop</h3>
+        <p>No wake word needed. Tap Option, speak, tap it again. Option shortcuts still work, because only a quick tap on its own counts.</p>
+      </div>
+      <div class="card">
+        <h3>Local speech models</h3>
+        <p>Parakeet models run on the Neural Engine. Your voice never leaves your Mac, and you can switch models from the menu bar.</p>
+      </div>
+      <div class="card">
+        <h3>Pastes where you are</h3>
+        <p>Parrot types into the field you're in, then puts your clipboard back. Apple's on-device model fixes punctuation and drops the ums.</p>
+      </div>
+      <div class="card">
+        <h3>Your vocabulary</h3>
+        <p>Add names and jargon, with how they get misheard, and Parrot spells them your way.</p>
+      </div>
+      <div class="card">
+        <h3>Call notes</h3>
+        <p>Record a call from the menu bar. You get a transcript of both sides and a summary with decisions and action items.</p>
+      </div>
+      <div class="card">
+        <h3>Searchable history</h3>
+        <p>Every dictation, with the model used and how long it took. Compare models on your own recordings.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-brand">
+      <picture><source srcset="/assets/icon-dark.png" media="(prefers-color-scheme: dark)"><img src="/assets/icon.png" alt=""></picture>
+      <div><span>Parrot</span><small>Free and <a href="https://github.com/HMDRAMS-DEV/parrot">open source</a>. macOS 26 or later.</small></div>
+    </div>
+    <div class="buttons">
+      <a class="btn btn-get" href="https://github.com/HMDRAMS-DEV/parrot/releases/latest/download/Parrot.dmg">Download for Mac</a>
+    </div>
+  </footer>
+
+<script>
+  // Plays the wake word demo: listen, hear "Oy" and the words after it, write, then type.
+  const demo = document.querySelector('.demo');
+  const status = demo.querySelector('.status');
+  const said = demo.querySelector('.said');
+  const typed = demo.querySelector('.typed');
+  const lines = [
+    ['Oy,', 'tell', 'Sam', 'the', 'deck', 'is', 'ready', 'for', 'Monday.'],
+    ['Oy,', 'add', 'oat', 'milk', 'and', 'lemons', 'to', 'the', 'list.'],
+  ];
+  const results = ['Tell Sam the deck is ready for Monday.', 'Add oat milk and lemons to the list.'];
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  function show(words) {
+    said.innerHTML = words.map((w, i) => `<span class="w${i === 0 ? ' wake-w' : ''}">${w}</span>`).join(' ');
+    return [...said.children];
+  }
+
+  async function play(n) {
+    const words = show(lines[n]);
+    demo.dataset.step = 'idle'; status.textContent = 'Listening for “Oy”'; typed.textContent = '';
+    if (still) { words.forEach(w => w.classList.add('on')); typed.textContent = results[n]; return; }
+    await wait(1200);
+    for (const [i, w] of words.entries()) {
+      w.classList.add('on');
+      if (i === 0) { demo.dataset.step = 'hear'; status.textContent = 'Heard “Oy”'; }
+      await wait(i === 0 ? 520 : 260);
+    }
+    await wait(700);
+    demo.dataset.step = 'write'; status.textContent = 'Writing it down';
+    await wait(900);
+    for (const ch of results[n]) { typed.textContent += ch; await wait(22); }
+    demo.dataset.step = 'idle'; status.textContent = 'Listening for “Oy”';
+    await wait(2600);
+    play((n + 1) % lines.length);
+  }
+
+  new IntersectionObserver((entries, observer) => {
+    if (entries[0].isIntersecting) { observer.disconnect(); play(0); }
+  }, { threshold: 0.4 }).observe(demo);
+</script>
+</body>
+</html>

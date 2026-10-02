@@ -98,4 +98,17 @@ struct WakeWordTests {
         #expect(WakeWord.match("Hey, how are you?") == nil)
         #expect(WakeWord.match("") == nil)
     }
+
+    @Test func customWord() {
+        #expect(WakeWord.normalized("Hey Jarvis!") == "jarvis")
+        #expect(WakeWord.match("Jarvis, open the notes.", word: "Hey Jarvis!") == "Open the notes.")
+        #expect(WakeWord.match("Hey jarvis jarvis call mom", word: "Jarvis") == "Call mom")
+        #expect(WakeWord.match("Jarvis.", word: "Jarvis") == "")
+        #expect(WakeWord.match("Oi, send the deck.", word: "Jarvis") == nil)
+        #expect(WakeWord.match("Lloyd.", word: "Jarvis") == nil)
+        #expect(WakeWord.match("Parrot, send it.", word: "Parrot") == "Send it.")
+        #expect(WakeWord.match("Oi, send it.", word: "Parrot") == nil)
+        // Nothing usable typed falls back to Oy.
+        #expect(WakeWord.match("Oi, send it.", word: "  ") == "Send it.")
+    }
 }

@@ -1,5 +1,6 @@
 #!/bin/zsh
-# Generates parrot-call candidates with ElevenLabs sound effects, then makes them short and deep.
+# Generates sound candidates with ElevenLabs sound effects: deep parrot calls for start and cancel,
+# and an abstract chirp for stop. Then trims and levels them.
 #
 #     ELEVENLABS_API_KEY=... scripts/make-sounds.sh [out-dir]
 #
@@ -12,12 +13,15 @@ mkdir -p "$out/raw"
 
 typeset -A prompts
 prompts[start]="A soft gentle low parrot coo, short and rounded, mellow and friendly, slightly rising, close mic, clean studio recording, no background noise, no reverb"
-prompts[stop]="A single short deep low-pitched parrot cluck, falling pitch, content and satisfied, close mic, clean studio recording, no background noise, no reverb"
+prompts[stop]="A gentle abstract synthesized bird chirp, soft sine tone with a quick pitch flick down, subtle and calm, minimal interface confirmation sound, clean, no background noise"
 prompts[cancel]="A short deep low parrot grumble, descending, disappointed, close mic, clean studio recording, no background noise"
-# How far to pitch each one down, and where to roll off the top. The start sound plays most, so it's the mildest.
-typeset -A rates lowpass
-rates=(start 0.8 stop 0.8 cancel 0.8)
-lowpass=(start 2800 stop 5500 cancel 5500)
+# How far to pitch each one down, how much low end to add, where to roll off the top, and the peak
+# level. The start sound plays most, so it's the mildest call; the stop chirp stays unpitched and quiet.
+typeset -A rates bass lowpass peaks
+rates=(start 0.8 stop 1 cancel 0.8)
+bass=(start 5 stop 0 cancel 5)
+lowpass=(start 2800 stop 6000 cancel 5500)
+peaks=(start -5 stop -9 cancel -5)
 
 for kind in start stop cancel; do
   for i in 1 2 3; do
@@ -31,10 +35,10 @@ wait
 for kind in start stop cancel; do
   for i in 1 2 3; do
     name="$kind-$i"
-    # Trim the lead-in, pitch down, warm the low end, cap at 0.42 s with a fade, then peak at -5 dB.
-    ffmpeg -hide_banner -loglevel error -y -i "$out/raw/$name.mp3" -af "silenceremove=start_periods=1:start_threshold=-40dB,asetrate=44100*${rates[$kind]},aresample=44100,bass=g=5:f=140,lowpass=f=${lowpass[$kind]},atrim=0:0.42,afade=t=in:d=0.02,afade=t=out:st=0.32:d=0.1,silenceremove=stop_periods=-1:stop_threshold=-50dB" -ac 1 "$out/raw/$name.wav"
+    # Trim the lead-in, pitch down, warm the low end, cap at 0.42 s with a fade, then set the peak.
+    ffmpeg -hide_banner -loglevel error -y -i "$out/raw/$name.mp3" -af "silenceremove=start_periods=1:start_threshold=-40dB,asetrate=44100*${rates[$kind]},aresample=44100,bass=g=${bass[$kind]}:f=140,lowpass=f=${lowpass[$kind]},atrim=0:0.42,afade=t=in:d=0.02,afade=t=out:st=0.32:d=0.1,silenceremove=stop_periods=-1:stop_threshold=-50dB" -ac 1 "$out/raw/$name.wav"
     peak=$(ffmpeg -hide_banner -i "$out/raw/$name.wav" -af volumedetect -f null - 2>&1 | awk '/max_volume/{print $5}')
-    ffmpeg -hide_banner -loglevel error -y -i "$out/raw/$name.wav" -af "volume=$(echo "-5 - ($peak)" | bc -l)dB" -c:a pcm_s16le "$out/$name.wav"
+    ffmpeg -hide_banner -loglevel error -y -i "$out/raw/$name.wav" -af "volume=$(echo "${peaks[$kind]} - ($peak)" | bc -l)dB" -c:a pcm_s16le "$out/$name.wav"
     say -r 220 "$kind $i"; afplay "$out/$name.wav"; sleep 0.6
   done
 done

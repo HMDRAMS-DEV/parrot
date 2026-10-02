@@ -142,7 +142,7 @@ private struct StatusText: View {
         Group {
             switch store.phase {
             case .idle:
-                Text(store.handsFree == .listening ? "Say “Oy” or tap ⌥" : "Tap ⌥ to dictate")
+                Text(store.handsFree == .listening ? "Say “\(store.wakeWordName)” or tap ⌥" : "Tap ⌥ to dictate")
             case .recording(let since):
                 HStack(spacing: 8) {
                     TimelineView(.periodic(from: since, by: 1)) { context in
@@ -202,7 +202,7 @@ private struct EnginePicker: View {
     }
 }
 
-/// The microphone, and whether to listen for "Oy" all the time.
+/// The microphone, and whether to listen for the wake word all the time.
 private struct HandsFreeTile: View {
     @Environment(ParrotStore.self) private var store
 
@@ -220,11 +220,20 @@ private struct HandsFreeTile: View {
                 .labelsHidden()
                 .frame(width: pickerWidth)
             }
-            SettingRow("Listen for “Oy”", note: store.handsFreeOn ? status : nil) {
-                Toggle("Listen for “Oy”", isOn: $store.handsFreeOn)
+            SettingRow("Listen for “\(store.wakeWordName)”", note: store.handsFreeOn ? status : nil) {
+                Toggle("Listen for “\(store.wakeWordName)”", isOn: $store.handsFreeOn)
                     .labelsHidden()
                     .toggleStyle(.switch)
                     .controlSize(.small)
+            }
+            if store.handsFreeOn {
+                SettingRow("Wake word") {
+                    TextField("Wake word", text: $store.wakeWord, prompt: Text(WakeWord.standard))
+                        .labelsHidden()
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: pickerWidth)
+                }
+                .help("One word. A short, unusual word works best, since everyday words wake Parrot by mistake. Oy and Parrot also catch common mishearings.")
             }
         }
     }
@@ -232,7 +241,7 @@ private struct HandsFreeTile: View {
     private var status: String {
         switch store.handsFree {
         case .off, .loading: "Starting…"
-        case .listening: "Say “Oy”, then what you want typed. Stop talking for a second to finish."
+        case .listening: "Say “\(store.wakeWordName)”, then what you want typed. Stop talking for a second to finish."
         case .waitingForMic: store.inputUID == nil ? "Pick a microphone above. Parrot only listens hands-free on one you choose." : "Waiting for the microphone to connect."
         case .paused: "Paused while the screen is locked."
         case .failed(let message): "Stopped: \(message)"

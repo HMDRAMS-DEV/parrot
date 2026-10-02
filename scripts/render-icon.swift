@@ -2,7 +2,7 @@
 //
 //     swift scripts/render-icon.swift
 //
-// Pacer's tile with a green bird and the red recording dot from the menu bar.
+// A geometric parrot in profile, built from circles and quarter circles, on a plain tile.
 
 import AppKit
 
@@ -13,17 +13,36 @@ func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> CGColor {
     CGColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
 }
 
-func gradient(_ colors: [CGColor]) -> CGGradient {
-    CGGradient(colorsSpace: nil, colors: colors as CFArray, locations: nil)!
+/// A pie slice: a disc of radius `r` around (x, y), from angle `a` to `b` in degrees.
+func slice(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat, _ a: CGFloat, _ b: CGFloat) -> CGPath {
+    let path = CGMutablePath()
+    path.move(to: CGPoint(x: x, y: y))
+    path.addArc(center: CGPoint(x: x, y: y), radius: r, startAngle: a * .pi / 180, endAngle: b * .pi / 180, clockwise: false)
+    path.closeSubpath()
+    return path
 }
 
-/// The bird symbol as a mask, so a gradient can fill it.
-let bird: CGImage = {
-    let config = NSImage.SymbolConfiguration(pointSize: 440, weight: .regular)
-    let symbol = NSImage(systemSymbolName: "bird.fill", accessibilityDescription: nil)!.withSymbolConfiguration(config)!
-    var rect = CGRect(origin: .zero, size: symbol.size)
-    return symbol.cgImage(forProposedRect: &rect, context: nil, hints: nil)!
-}()
+/// A parrot in profile, built from circles and quarter circles: banded half-disc wings, a red
+/// body and head, a yellow beak, and a quarter-disc tail. Drawn on the 1024pt canvas.
+func parrot(in context: CGContext) {
+    func fill(_ hex: UInt32, _ path: CGPath) {
+        context.addPath(path)
+        context.setFillColor(color(hex))
+        context.fillPath()
+    }
+
+    context.translateBy(x: 0, y: 32)
+    fill(0x3B5BA9, slice(512, 540, 270, 180, 360))
+    fill(0xE8B04B, slice(512, 540, 215, 180, 360))
+    fill(0xC8452C, slice(512, 540, 160, 180, 360))
+    fill(0xA8361F, slice(422, 400, 190, 270, 360))
+    fill(0xC8452C, CGPath(rect: CGRect(x: 422, y: 400, width: 180, height: 250), transform: nil))
+    fill(0xC8452C, slice(512, 650, 90, 0, 180))
+    fill(0xC8452C, slice(422, 650, 90, 0, 90))
+    fill(0xE8B04B, slice(602, 560, 120, 0, 90))
+    fill(0xF7F1E6, slice(544, 655, 50, 0, 360))
+    fill(0x1E2235, slice(552, 655, 22, 0, 360))
+}
 
 func draw(in context: CGContext, size: CGFloat, dark: Bool) {
     context.scaleBy(x: size / 1024, y: size / 1024)
@@ -35,15 +54,15 @@ func draw(in context: CGContext, size: CGFloat, dark: Bool) {
     context.saveGState()
     context.setShadow(offset: CGSize(width: 0, height: -10), blur: 28, color: color(0x000000, 0.3))
     context.addPath(shape)
-    context.setFillColor(color(dark ? 0x161618 : 0xF7F5F3))
+    context.setFillColor(color(dark ? 0x22263A : 0xF5EEE2))
     context.fillPath()
     context.restoreGState()
 
     context.saveGState()
     context.addPath(shape)
     context.clip()
-    let background = dark ? gradient([color(0x2A2A2E), color(0x0E0E10)]) : gradient([color(0xFFFFFF), color(0xEEEAE5)])
-    context.drawLinearGradient(background, start: CGPoint(x: 512, y: 924), end: CGPoint(x: 512, y: 100), options: [])
+    context.setFillColor(color(dark ? 0x22263A : 0xF5EEE2))
+    context.fill(tile)
     context.restoreGState()
 
     context.saveGState()
@@ -53,21 +72,7 @@ func draw(in context: CGContext, size: CGFloat, dark: Bool) {
     context.strokePath()
     context.restoreGState()
 
-    // The bird, centered a little left to leave room for the dot.
-    let aspect = CGFloat(bird.width) / CGFloat(bird.height)
-    let height: CGFloat = 540
-    let frame = CGRect(x: 512 - height * aspect / 2 - 36, y: 512 - height / 2 + 30, width: height * aspect, height: height)
-    context.saveGState()
-    context.clip(to: frame, mask: bird)
-    context.drawLinearGradient(gradient([color(0x0E8A4A), color(0x5BE39A)]), start: CGPoint(x: frame.minX, y: frame.minY), end: CGPoint(x: frame.maxX, y: frame.maxY), options: [])
-    context.restoreGState()
-
-    // The recording dot, with a halo.
-    let dot = CGRect(x: 668, y: 228, width: 124, height: 124)
-    context.setFillColor(color(0xE5392B, 0.22))
-    context.fillEllipse(in: dot.insetBy(dx: -34, dy: -34))
-    context.setFillColor(color(0xE5392B))
-    context.fillEllipse(in: dot)
+    parrot(in: context)
 }
 
 func png(pixels: Int, dark: Bool = false) -> Data {

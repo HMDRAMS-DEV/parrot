@@ -8,9 +8,9 @@ final class ParrotStore {
     enum Phase: Equatable {
         case idle
         case recording(since: Date)
-        /// Heard "Oy" on its own, waiting for what comes next.
+        /// Heard the wake word on its own, waiting for what comes next.
         case awaitingWords(since: Date)
-        /// Heard "Oy" while the speaker is still talking. Ends when they pause.
+        /// Heard the wake word while the speaker is still talking. Ends when they pause.
         case hearing(since: Date)
         case transcribing
     }
@@ -67,12 +67,22 @@ final class ParrotStore {
         }
     }
 
-    /// Listen all the time for "Parrot".
+    /// Listen all the time for the wake word.
     var handsFreeOn: Bool {
         didSet {
             UserDefaults.standard.set(handsFreeOn, forKey: Keys.handsFree)
             updateListener()
         }
+    }
+
+    /// The word that starts hands-free dictation, as the user typed it.
+    var wakeWord: String {
+        didSet { UserDefaults.standard.set(wakeWord, forKey: Keys.wakeWord) }
+    }
+
+    /// The wake word as Parrot hears it, for showing: "Hey jarvis!" is "Jarvis".
+    var wakeWordName: String {
+        (WakeWord.normalized(wakeWord) ?? WakeWord.standard).capitalized
     }
 
     /// Tidy punctuation and drop filler words with Apple's on-device model before pasting.
@@ -108,6 +118,7 @@ final class ParrotStore {
         engineID = UserDefaults.standard.string(forKey: Keys.engine).flatMap(EngineID.init) ?? .default
         inputUID = UserDefaults.standard.string(forKey: Keys.input)
         handsFreeOn = UserDefaults.standard.bool(forKey: Keys.handsFree)
+        wakeWord = UserDefaults.standard.string(forKey: Keys.wakeWord) ?? WakeWord.standard
         cleanupOn = UserDefaults.standard.object(forKey: Keys.cleanup) as? Bool ?? true
     }
 
@@ -284,7 +295,7 @@ final class ParrotStore {
     }
 
     /// Checks the start of an utterance while it's still going, so the start sound plays as soon
-    /// as "Oy" is said instead of after the pause.
+    /// as the wake word is said instead of after the pause.
     private func heardPartial(_ partial: WakeListener.Utterance) {
         guard phase == .idle else { return }
         if early?.start != partial.startedAt { early = (partial.startedAt, false, false) }
@@ -295,7 +306,7 @@ final class ParrotStore {
             // The utterance may have ended, or another begun, while this ran.
             guard early?.start == partial.startedAt, early?.settled == false else { return }
             early?.checking = false
-            if WakeWord.match(text) != nil, phase == .idle {
+            if WakeWord.match(text, word: wakeWord) != nil, phase == .idle {
                 early?.settled = true
                 phase = .hearing(since: .now)
                 Sound.start.play()
@@ -331,12 +342,12 @@ final class ParrotStore {
         }
     }
 
-    /// Transcribes only the first couple of seconds, which is enough to hear "Oy". Most
+    /// Transcribes only the first couple of seconds, which is enough to hear the wake word. Most
     /// utterances aren't meant for Parrot, so this keeps the work small.
     private func checkForWakeWord(_ utterance: WakeListener.Utterance) async {
         let head = Array(utterance.samples.prefix(Int(2.5 * Recorder.sampleRate)))
         guard let text = try? await engine(engineID).transcribe(head) else { return }
-        let match = WakeWord.match(text)
+        let match = WakeWord.match(text, word: wakeWord)
         if head.count == utterance.samples.count { WakeLog.add(text, triggered: match != nil) }
         guard let rest = match, phase == .idle else { return }
         if rest.isEmpty && head.count == utterance.samples.count {
@@ -346,7 +357,7 @@ final class ParrotStore {
         }
     }
 
-    /// "Oy" was said on its own. Wait a few seconds for what comes next.
+    /// The wake word was said on its own. Wait a few seconds for what comes next.
     private func awaitWords(playSound: Bool) {
         phase = .awaitingWords(since: .now)
         if playSound { Sound.start.play() }
@@ -367,7 +378,7 @@ final class ParrotStore {
             if wake {
                 // The whole utterance can read differently from its start, like "Oil prices…"
                 // after a partial "Oi". Then it wasn't for Parrot after all.
-                guard let rest = WakeWord.match(text) else {
+                guard let rest = WakeWord.match(text, word: wakeWord) else {
                     phase = .idle
                     if soundPlayed { Sound.cancel.play() }
                     return
@@ -375,7 +386,7 @@ final class ParrotStore {
                 text = rest
             }
             guard !text.isEmpty else {
-                // Woke early on "Oy" said on its own: keep waiting for the words.
+                // Woke early on the wake word said on its own: keep waiting for the words.
                 if soundPlayed { awaitWords(playSound: false) } else { phase = .idle }
                 return
             }
@@ -551,10 +562,11 @@ enum Keys {
     static let input = "input"
     static let handsFree = "handsFree"
     static let cleanup = "cleanup"
+    static let wakeWord = "wakeWord"
 }
 
-/// Short, deep parrot calls for start, stop, and cancel. Made with ElevenLabs sound effects,
-/// then pitched down and trimmed; see scripts/make-sounds.sh.
+/// Short sounds for start, stop, and cancel: deep parrot calls for start and cancel, a soft
+/// abstract chirp for stop. Made with ElevenLabs sound effects; see scripts/make-sounds.sh.
 enum Sound: String {
     case start, stop, cancel
 
