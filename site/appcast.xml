@@ -7,6 +7,15 @@
     <language>en</language>
     <!-- releases -->
     <item>
+      <title>Parrot 0.1.2</title>
+      <pubDate>Fri, 02 Oct 2026 19:24:10 +0000</pubDate>
+      <sparkle:version>3</sparkle:version>
+      <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Fixes long hands-free dictations being cancelled. If Parrot heard “Oy” at the start, it now keeps what you said even when the full recording hears the wake word differently.</p>]]></description>
+      <enclosure url="https://github.com/HMDRAMS-DEV/parrot/releases/download/v0.1.2/Parrot.dmg" type="application/octet-stream" sparkle:edSignature="MkiCG3j0CJc04QbDxzlRBjTRM8+PzDDbhW7DigR9jxbW/Qal01XugRMQXxaj/V5aNnF4TpjNn/lCOS6+V9SEBA==" length="22987665"/>
+    </item>
+    <item>
       <title>Parrot 0.1.1</title>
       <pubDate>Fri, 02 Oct 2026 15:54:43 +0000</pubDate>
       <sparkle:version>2</sparkle:version>
