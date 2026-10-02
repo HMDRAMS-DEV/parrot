@@ -6,5 +6,14 @@
     <description>Parrot updates. scripts/release.sh adds each release below the marker.</description>
     <language>en</language>
     <!-- releases -->
+    <item>
+      <title>Parrot 0.1.0</title>
+      <pubDate>Fri, 02 Oct 2026 15:33:56 +0000</pubDate>
+      <sparkle:version>1</sparkle:version>
+      <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>First release. Dictate from the menu bar by saying “Oy” or tapping Option. Speech becomes text on your Mac with local Parakeet models.</p>]]></description>
+      <enclosure url="https://github.com/HMDRAMS-DEV/parrot/releases/download/v0.1.0/Parrot.dmg" type="application/octet-stream" sparkle:edSignature="ikqFYsX8CNjf0bOSENodJI6+GSJ/KFW1k1+LIKkWMX/nVkBmIxAVYLKmVtyG/5+LUSuGhw8ZwP6AYeS3ObY5Bg==" length="22929947"/>
+    </item>
   </channel>
 </rss>
