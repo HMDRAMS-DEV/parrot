@@ -25,14 +25,15 @@ final class WakeListener {
     func start(from input: AudioInput, onPartial: @escaping @MainActor (Utterance) -> Void, onUtterance: @escaping @MainActor (Utterance) -> Void, onFailure: @escaping @MainActor (String) -> Void) {
         stop()
         let (stream, continuation) = AsyncStream.makeStream(of: [Float].self, bufferingPolicy: .bufferingNewest(400))
-        do {
-            session = try MicSession(from: input, onLost: onFailure) { continuation.yield($0) }
-        } catch {
-            onFailure(error.localizedDescription)
-            return
-        }
         loop = Task {
             do {
+                let session = try await MicSession.open(from: input, onLost: onFailure) { continuation.yield($0) }
+                // Stopped while the microphone opened.
+                guard !Task.isCancelled else {
+                    session.stop()
+                    return
+                }
+                self.session = session
                 try await Self.segment(stream, onPartial: onPartial, onUtterance: onUtterance)
             } catch is CancellationError {
             } catch {

@@ -103,6 +103,8 @@ final class ParrotStore {
     @ObservationIgnored private lazy var monitor = OptionTapMonitor { [weak self] in self?.toggle() }
     @ObservationIgnored private let listener = WakeListener()
     @ObservationIgnored private var started = false
+    /// The microphone is opening for a dictation. Taps meanwhile are ignored.
+    @ObservationIgnored private var opening = false
     @ObservationIgnored private var screenAway = false
     @ObservationIgnored private var awaitingTimeout: Task<Void, Never>?
     /// The utterance being checked for the wake word before it ends, by its start time.
@@ -157,7 +159,7 @@ final class ParrotStore {
 
     func toggle() {
         switch phase {
-        case .idle: startRecording()
+        case .idle: Task { await startRecording() }
         case .recording: Task { await finishRecording() }
         case .awaitingWords, .hearing: cancel()
         case .transcribing: break
@@ -176,12 +178,10 @@ final class ParrotStore {
         Sound.cancel.play()
     }
 
-    private func startRecording() {
+    private func startRecording() async {
         switch Permissions.microphone {
         case .notDetermined:
-            Task {
-                if await Permissions.requestMicrophone() { startRecording() }
-            }
+            if await Permissions.requestMicrophone() { await startRecording() }
             return
         case .denied, .restricted:
             notice = "Parrot needs the microphone. Turn it on in System Settings."
@@ -190,8 +190,16 @@ final class ParrotStore {
         default:
             break
         }
+        guard !opening else { return }
+        opening = true
+        defer { opening = false }
         do {
-            try recorder.start(from: input)
+            try await recorder.start(from: input)
+            // Hands-free may have woken while the microphone opened.
+            guard phase == .idle else {
+                _ = recorder.stop()
+                return
+            }
             phase = .recording(since: .now)
             Sound.start.play()
         } catch {
