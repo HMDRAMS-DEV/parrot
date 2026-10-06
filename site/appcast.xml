@@ -7,6 +7,15 @@
     <language>en</language>
     <!-- releases -->
     <item>
+      <title>Parrot 0.1.3</title>
+      <pubDate>Tue, 06 Oct 2026 18:05:53 +0000</pubDate>
+      <sparkle:version>4</sparkle:version>
+      <sparkle:shortVersionString>0.1.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Fixes Parrot freezing after a few Option taps when the microphone stalls. Parrot now stays responsive and shows a notice instead.</p>]]></description>
+      <enclosure url="https://github.com/HMDRAMS-DEV/parrot/releases/download/v0.1.3/Parrot.dmg" type="application/octet-stream" sparkle:edSignature="JgOJze0b+5NZlMtKdnmoBHGTQbTlgYPN/pxglDSH1fVZkBtngeF6rrb9c/NGS1XH3nhjY2Wl5HEitdMCvWN0Dw==" length="23006811"/>
+    </item>
+    <item>
       <title>Parrot 0.1.2</title>
       <pubDate>Fri, 02 Oct 2026 19:24:10 +0000</pubDate>
       <sparkle:version>3</sparkle:version>
