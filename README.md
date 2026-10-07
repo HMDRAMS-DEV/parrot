@@ -1,6 +1,6 @@
 # Parrot
 
-Dictation from the menu bar. Say "Oy" or tap Option, speak, and Parrot turns your speech into text on this Mac and pastes it into the field you're typing in. [parrot.ramihmd.com](https://parrot.ramihmd.com)
+Local dictation for the macOS menu bar. Say "Oy" or tap Option, speak, and Parrot turns your speech into text on this Mac and pastes it into the field you're typing in. [parrot.ramihmd.com](https://parrot.ramihmd.com)
 
 ## What you get
 
