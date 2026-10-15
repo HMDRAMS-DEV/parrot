@@ -7,6 +7,15 @@
     <language>en</language>
     <!-- releases -->
     <item>
+      <title>Parrot 0.1.5</title>
+      <pubDate>Thu, 15 Oct 2026 13:27:31 +0000</pubDate>
+      <sparkle:version>6</sparkle:version>
+      <sparkle:shortVersionString>0.1.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Simpler menu: Cleanup is one picker (Off, Apple, S1-mini), and model details moved into tooltips.</p>]]></description>
+      <enclosure url="https://github.com/HMDRAMS-DEV/parrot/releases/download/v0.1.5/Parrot.dmg" type="application/octet-stream" sparkle:edSignature="1X7egiu9h/aJUkGpAC7QJzb7E9l9ZF13ItWCwifn6VEMFcK80hquPVVvJpvv/2IQqBYe4okuKS1vp51NRgTcAg==" length="41661538"/>
+    </item>
+    <item>
       <title>Parrot 0.1.4</title>
       <pubDate>Thu, 15 Oct 2026 13:12:44 +0000</pubDate>
       <sparkle:version>5</sparkle:version>
