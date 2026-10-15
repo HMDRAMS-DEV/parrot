@@ -7,6 +7,15 @@
     <language>en</language>
     <!-- releases -->
     <item>
+      <title>Parrot 0.1.6</title>
+      <pubDate>Thu, 15 Oct 2026 14:23:44 +0000</pubDate>
+      <sparkle:version>7</sparkle:version>
+      <sparkle:shortVersionString>0.1.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Meeting reminders: a minute before a call on your calendar, Take notes joins it and records. Live transcript in the menu, calls stop themselves when the meeting ends, and aligned menus.</p>]]></description>
+      <enclosure url="https://github.com/HMDRAMS-DEV/parrot/releases/download/v0.1.6/Parrot.dmg" type="application/octet-stream" sparkle:edSignature="he1Kc2f7UkQiwPMXVsqxpYImXGYYWJFyYNizJ3CA9J8dTJVcXMAXQ3FcOznpBymjGv4kkphyUvCYFK1ZdkXXBA==" length="41803645"/>
+    </item>
+    <item>
       <title>Parrot 0.1.5</title>
       <pubDate>Thu, 15 Oct 2026 13:27:31 +0000</pubDate>
       <sparkle:version>6</sparkle:version>
