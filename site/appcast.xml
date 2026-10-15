@@ -7,6 +7,15 @@
     <language>en</language>
     <!-- releases -->
     <item>
+      <title>Parrot 0.1.4</title>
+      <pubDate>Thu, 15 Oct 2026 13:12:44 +0000</pubDate>
+      <sparkle:version>5</sparkle:version>
+      <sparkle:shortVersionString>0.1.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Cleanup can now use S1-mini by Superwhisper, which also fixes self-corrections like "forty two, no, forty three" and writes numbers, times, and emails. English, a 630 MB download on first use. Pick it under Cleanup model.</p>]]></description>
+      <enclosure url="https://github.com/HMDRAMS-DEV/parrot/releases/download/v0.1.4/Parrot.dmg" type="application/octet-stream" sparkle:edSignature="vOLEKsfh7kIg17iDN5EWQzRBGE7rpKBtoXGSsme86hR/V8kq5qedvhgQACs7d6pIDgDNjso03IgrMYFBxxkhAA==" length="41658048"/>
+    </item>
+    <item>
       <title>Parrot 0.1.3</title>
       <pubDate>Tue, 06 Oct 2026 18:05:53 +0000</pubDate>
       <sparkle:version>4</sparkle:version>
