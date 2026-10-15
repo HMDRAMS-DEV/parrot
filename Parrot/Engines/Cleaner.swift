@@ -4,9 +4,40 @@ import FoundationModels
 /// Tidies a transcript: punctuation, capitals, filler words, stutters. It must never rephrase.
 ///
 /// Like engines, cleaners are pluggable. To try a Hugging Face model, add a type that conforms
-/// and pick it in `ParrotStore.cleaner`. `Cleanup.guarded` keeps any cleaner honest.
+/// and a case to `CleanerID`. `Cleanup.guarded` keeps any cleaner honest.
 protocol Cleaner: Sendable {
     func clean(_ text: String, vocabulary: [String]) async throws -> String
+    /// Whether the cleaned text still says what the original said.
+    func isFaithful(_ cleaned: String, to original: String) -> Bool
+}
+
+extension Cleaner {
+    func isFaithful(_ cleaned: String, to original: String) -> Bool {
+        Cleanup.isFaithful(cleaned, to: original)
+    }
+}
+
+enum CleanerID: String, CaseIterable, Identifiable {
+    case apple, s1Mini
+
+    static let `default` = CleanerID.apple
+
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .apple: "Apple Intelligence"
+        // The license asks for this exact name.
+        case .s1Mini: "S1-mini by Superwhisper"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .apple: "Built into macOS. No download."
+        case .s1Mini: "Superwhisper, Aug 2026. Also fixes \"no, I mean\" and writes numbers, times, and emails. English. 630 MB download."
+        }
+    }
 }
 
 /// Apple's on-device model (about 3B parameters), built into macOS 26. No download, nothing
@@ -50,14 +81,14 @@ struct AppleCleaner: Cleaner {
 
 enum Cleanup {
     /// Words a cleaner may drop without it counting as a change.
-    static let fillers: Set<String> = ["um", "umm", "uh", "uhh", "uhm", "erm", "er", "ah", "hmm", "mm"]
+    static let fillers: Set<String> = ["um", "umm", "uh", "uhh", "uhm", "erm", "er", "ah", "hm", "hmm", "mm"]
 
     /// Runs the cleaner, and keeps the original if anything goes wrong or the result strays from
     /// what was said. Small models sometimes answer a dictated question instead of cleaning it.
     static func guarded(_ text: String, with cleaner: any Cleaner, vocabulary: [String]) async -> String {
         guard WordErrorRate.words(text).count >= 3,
               let cleaned = try? await cleaner.clean(text, vocabulary: vocabulary).trimmingCharacters(in: .whitespacesAndNewlines),
-              isFaithful(cleaned, to: text)
+              cleaner.isFaithful(cleaned, to: text)
         else { return text }
         return cleaned
     }
@@ -70,5 +101,36 @@ enum Cleanup {
         guard !after.isEmpty, !before.isEmpty else { return false }
         let edits = WordErrorRate.edits(reference: before.joined(separator: " "), hypothesis: after.joined(separator: " ")).edits
         return Double(edits) <= max(2, Double(before.count) * 0.25)
+    }
+
+    /// Words S1-mini writes out when it expands "gonna", "wanna", "kinda", "lemme", or a time.
+    static let expansions: Set<String> = ["going", "to", "want", "got", "kind", "sort", "of", "let", "me", "give", "because", "am", "pm"]
+    /// What follows the apostrophe in a contraction, like the m in I'm.
+    static let contractionEnds: Set<String> = ["m", "s", "t", "re", "ve", "ll", "d"]
+
+    /// For cleaners that may drop words, as when they resolve "forty two no sorry forty three"
+    /// to "43": true when every word in the cleaned text was said, is a number, or is a known
+    /// expansion, and at least a third of the words remain. An answer to a dictated question
+    /// brings in new words, so it fails.
+    static func addsNoWords(_ cleaned: String, to original: String) -> Bool {
+        func words(_ text: String) -> [String] {
+            WordErrorRate.words(text.replacingOccurrences(of: "\u{2019}", with: "'"))
+        }
+        let said = words(original).map { $0.replacingOccurrences(of: "'", with: "") }
+        let kept = words(cleaned)
+        guard !kept.isEmpty, kept.count * 3 >= said.filter({ !fillers.contains($0) }).count else { return false }
+        // "super whisper" may come back as Superwhisper.
+        var known = Set(said)
+        for length in 2...3 where said.count >= length {
+            for start in 0...(said.count - length) {
+                known.insert(said[start..<start + length].joined())
+            }
+        }
+        return kept.allSatisfy { word in
+            if word.contains(where: \.isNumber) || expansions.contains(word) || fillers.contains(word) || known.contains(word.replacingOccurrences(of: "'", with: "")) { return true }
+            let parts = word.split(separator: "'").map(String.init)
+            guard parts.count == 2 else { return false }
+            return (known.contains(parts[0]) || expansions.contains(parts[0])) && contractionEnds.contains(parts[1])
+        }
     }
 }

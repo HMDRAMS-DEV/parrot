@@ -30,6 +30,21 @@ struct CleanupTests {
         let faithful = Cleanup.isFaithful("Let's release it at the end of the week and gather feedback.", to: "we should ship the app on friday and see what people say")
         #expect(!faithful)
     }
+
+    @Test func selfCorrectionsAndFormattingAddNoWords() {
+        #expect(Cleanup.addsNoWords("I think the answer is 43.", to: "i think the answer is forty two no sorry forty three"))
+        #expect(Cleanup.addsNoWords("Let's meet at 3:15pm tomorrow.", to: "let's meet at half past two tomorrow uh actually make it three fifteen p m"))
+        #expect(Cleanup.addsNoWords("Send it to support@superwhisper.com.", to: "send it to support at superwhisper dot com"))
+        #expect(Cleanup.addsNoWords("I\u{2019}m going to be late.", to: "hmm im gonna be late"))
+        #expect(Cleanup.addsNoWords("Ask Superwhisper.", to: "um ask super whisper"))
+        #expect(Cleanup.addsNoWords("Hm, I'm going to be late.", to: "hmm im gonna be late"))
+    }
+
+    @Test func newWordsOrMostlyDroppedAreRejected() {
+        #expect(!Cleanup.addsNoWords("The capital of France is Paris.", to: "what is the capital of france"))
+        #expect(!Cleanup.addsNoWords("Ship it.", to: "we should ship the app on friday and see what people say"))
+        #expect(!Cleanup.addsNoWords("", to: "send the deck to sarah"))
+    }
 }
 
 struct CallTests {

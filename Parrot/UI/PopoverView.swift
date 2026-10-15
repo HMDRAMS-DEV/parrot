@@ -190,15 +190,35 @@ struct EnginePicker: View {
                 .labelsHidden()
                 .frame(width: pickerWidth)
             }
-            if AppleCleaner.isAvailable {
-                SettingRow("Fix punctuation, drop fillers") {
-                    Toggle("Fix punctuation, drop fillers", isOn: $store.cleanupOn)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                }
-                .help("Apple's on-device model fixes punctuation and drops um and uh. If it changes your words, Parrot keeps the original.")
+            SettingRow("Fix punctuation, drop fillers") {
+                Toggle("Fix punctuation, drop fillers", isOn: $store.cleanupOn)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
             }
+            .help("A small on-device model fixes punctuation and drops um and uh. If it changes your words, Parrot keeps the original.")
+            if store.cleanupOn {
+                SettingRow("Cleanup model", note: cleanerStatus) {
+                    Picker("Cleanup model", selection: $store.cleanerID) {
+                        ForEach(CleanerID.allCases) { Text($0.name).tag($0) }
+                    }
+                    .labelsHidden()
+                    .frame(width: pickerWidth)
+                }
+            }
+        }
+    }
+
+    private var cleanerStatus: String {
+        switch store.cleanerID {
+        case .apple where !AppleCleaner.isAvailable: "Needs Apple Intelligence, which is off or unsupported on this Mac."
+        case .s1Mini:
+            switch store.cleanerState {
+            case .loading: "Loading the model. The first time, this includes a download."
+            case .failed(let message): "Couldn't load: \(message)"
+            case .ready, nil: store.cleanerID.detail
+            }
+        default: store.cleanerID.detail
         }
     }
 

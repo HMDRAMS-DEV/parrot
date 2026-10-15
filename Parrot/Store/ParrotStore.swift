@@ -42,6 +42,8 @@ final class ParrotStore {
 
     private(set) var phase = Phase.idle
     private(set) var engineStates: [EngineID: EngineState] = [:]
+    /// S1-mini's load. Apple's model needs none.
+    private(set) var cleanerState: EngineState?
     /// The last problem worth showing, cleared by the next successful dictation.
     private(set) var notice: String?
     private(set) var accessibility = Permissions.accessibility
@@ -85,9 +87,19 @@ final class ParrotStore {
         (WakeWord.normalized(wakeWord) ?? WakeWord.standard).capitalized
     }
 
-    /// Tidy punctuation and drop filler words with Apple's on-device model before pasting.
+    /// Tidy punctuation and drop filler words with a small local model before pasting.
     var cleanupOn: Bool {
-        didSet { UserDefaults.standard.set(cleanupOn, forKey: Keys.cleanup) }
+        didSet {
+            UserDefaults.standard.set(cleanupOn, forKey: Keys.cleanup)
+            warmCleaner()
+        }
+    }
+
+    var cleanerID: CleanerID {
+        didSet {
+            UserDefaults.standard.set(cleanerID.rawValue, forKey: Keys.cleaner)
+            warmCleaner()
+        }
     }
 
     var engineID: EngineID {
@@ -115,7 +127,8 @@ final class ParrotStore {
     @ObservationIgnored private var cancelledStart: Date?
     @ObservationIgnored private let capture = CallCapture()
     @ObservationIgnored private var callWork: [Task<Void, Never>] = []
-    @ObservationIgnored private let cleaner: any Cleaner = AppleCleaner()
+    @ObservationIgnored private let appleCleaner = AppleCleaner()
+    @ObservationIgnored private let s1Mini = S1MiniCleaner()
 
     init() {
         engineID = UserDefaults.standard.string(forKey: Keys.engine).flatMap(EngineID.init) ?? .default
@@ -123,6 +136,7 @@ final class ParrotStore {
         handsFreeOn = UserDefaults.standard.bool(forKey: Keys.handsFree)
         wakeWord = UserDefaults.standard.string(forKey: Keys.wakeWord) ?? WakeWord.standard
         cleanupOn = UserDefaults.standard.object(forKey: Keys.cleanup) as? Bool ?? true
+        cleanerID = UserDefaults.standard.string(forKey: Keys.cleaner).flatMap(CleanerID.init) ?? .default
     }
 
     /// The chosen microphone, if it's plugged in.
@@ -137,6 +151,7 @@ final class ParrotStore {
         started = true
         monitor.start()
         warm(engineID)
+        warmCleaner()
         AudioInputs.onChange { [weak self] in
             guard let self else { return }
             inputs = AudioInputs.all()
@@ -242,12 +257,35 @@ final class ParrotStore {
         notice = await Paster.paste(text) ? nil : "Copied. Give Parrot Accessibility access to paste for you."
     }
 
-    /// Custom vocabulary, then cleanup if it's on.
+    /// Custom vocabulary, then cleanup if it's on. S1-mini takes no spelling hints, so the
+    /// vocabulary goes in again after it.
     private func polish(_ heard: String) async -> String {
         let terms = vocabulary.terms
         let text = Vocabulary.apply(terms, to: heard)
-        guard cleanupOn, AppleCleaner.isAvailable else { return text }
-        return await Cleanup.guarded(text, with: cleaner, vocabulary: terms.map(\.text))
+        guard cleanupOn, let cleaner = readyCleaner else { return text }
+        return Vocabulary.apply(terms, to: await Cleanup.guarded(text, with: cleaner, vocabulary: terms.map(\.text)))
+    }
+
+    /// The chosen cleaner, unless it can't run yet. A dictation doesn't wait on S1-mini's download.
+    private var readyCleaner: (any Cleaner)? {
+        switch cleanerID {
+        case .apple: AppleCleaner.isAvailable ? appleCleaner : nil
+        case .s1Mini: cleanerState == .ready ? s1Mini : nil
+        }
+    }
+
+    /// Loads S1-mini in the background once cleanup with it is chosen.
+    private func warmCleaner() {
+        guard started, cleanupOn, cleanerID == .s1Mini, cleanerState != .loading, cleanerState != .ready else { return }
+        cleanerState = .loading
+        Task {
+            do {
+                _ = try await s1Mini.load()
+                cleanerState = .ready
+            } catch {
+                cleanerState = .failed(error.localizedDescription)
+            }
+        }
     }
 
     // MARK: Hands-free
@@ -582,6 +620,7 @@ enum Keys {
     static let input = "input"
     static let handsFree = "handsFree"
     static let cleanup = "cleanup"
+    static let cleaner = "cleaner"
     static let wakeWord = "wakeWord"
 }
 

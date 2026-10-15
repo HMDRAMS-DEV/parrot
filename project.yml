@@ -11,6 +11,15 @@ packages:
   FluidAudio:
     url: https://github.com/FluidInference/FluidAudio
     from: "0.17.5"
+  MLXSwiftLM:
+    url: https://github.com/ml-explore/mlx-swift-lm
+    from: "3.32.3"
+  SwiftHuggingFace:
+    url: https://github.com/huggingface/swift-huggingface
+    from: "0.9.0"
+  SwiftTransformers:
+    url: https://github.com/huggingface/swift-transformers
+    from: "1.3.0"
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -23,12 +32,20 @@ targets:
     dependencies:
       - package: Sparkle
       - package: FluidAudio
+      - package: MLXSwiftLM
+        product: MLXLLM
+      - package: MLXSwiftLM
+        product: MLXLMCommon
+      - package: SwiftHuggingFace
+        product: HuggingFace
+      - package: SwiftTransformers
+        product: Tokenizers
     info:
       path: Parrot/Info.plist
       properties:
         CFBundleDisplayName: Parrot
-        CFBundleShortVersionString: "0.1.3"
-        CFBundleVersion: "4"
+        CFBundleShortVersionString: "0.1.4"
+        CFBundleVersion: "5"
         SUFeedURL: https://parrot.ramihmd.com/appcast.xml
         SUPublicEDKey: qOxwZqP7ofp2K4TUTCMqAA5P8EF/sbNrcEubiWKNHTE=
         SUEnableAutomaticChecks: true

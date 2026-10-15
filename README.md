@@ -9,7 +9,11 @@ Local dictation for the macOS menu bar. Say "Oy" or tap Option, speak, and Parro
 - **Paste where you are.** Parrot copies the text, presses Command-V for you, then puts your clipboard back. Clipboard managers skip the dictation.
 - **History.** Every dictation, searchable, with the model used, recording length, and how long the text took.
 - **Local models, your pick.** Parakeet Ultra by default. Switch in the popover.
-- **Cleanup.** Apple's on-device model fixes punctuation and capitals and drops um and uh, in about a second. If its output strays from your words (it answered a dictated question in testing), Parrot pastes the original. History keeps both.
+- **Cleanup.** A small on-device model fixes punctuation and capitals and drops um and uh. Pick one:
+  - Apple Intelligence, built into macOS, about a second. If its output strays from your words (it answered a dictated question in testing), Parrot pastes the original.
+  - S1-mini by Superwhisper (Qwen3 0.6B, Apache 2.0), run with MLX. It also resolves self-corrections ("forty two no sorry forty three" becomes "43") and writes numbers, times, and emails. English. A 630 MB download to `~/Library/Application Support/Parrot/Models` on first use, then about 0.2 seconds per sentence. Since it drops corrected words, Parrot instead checks it added no words you didn't say. Run it on the model card examples with `TEST_RUNNER_PARROT_S1MINI=1 xcodebuild ... test -only-testing:ParrotTests/S1MiniCheck`.
+
+  History keeps both the cleaned and the original text.
 - **Vocabulary.** Names and jargon Parrot should spell your way, each with how it mishears them. Parakeet engines listen for the terms with FluidAudio's CTC boosting, aliases are swapped in every transcript, and cleanup gets them as spelling hints.
 - **Call notes.** Record in the popover when a call starts. Parrot records your mic as "You" and everything the Mac plays as "Them", transcribes both as the call goes, and writes a summary with decisions and action items when you stop. Only text is kept. Use headphones: on speakers, the mic hears the other side too (Parrot drops obvious echoes).
 
