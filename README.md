@@ -9,7 +9,7 @@ Local dictation for the macOS menu bar. Say "Oy" or tap Option, speak, and Parro
 - **Paste where you are.** Parrot copies the text, presses Command-V for you, then puts your clipboard back. Clipboard managers skip the dictation.
 - **History.** Every dictation, searchable, with the model used, recording length, and how long the text took.
 - **Local models, your pick.** Parakeet Ultra by default. Switch in the popover.
-- **Cleanup.** A small on-device model fixes punctuation and capitals and drops um and uh. Pick one:
+- **Cleanup.** A small on-device model fixes punctuation and capitals and drops um and uh. Pick one under Cleanup, or Off:
   - Apple Intelligence, built into macOS, about a second. If its output strays from your words (it answered a dictated question in testing), Parrot pastes the original.
   - S1-mini by Superwhisper (Qwen3 0.6B, Apache 2.0), run with MLX. It also resolves self-corrections ("forty two no sorry forty three" becomes "43") and writes numbers, times, and emails. English. A 630 MB download to `~/Library/Application Support/Parrot/Models` on first use, then about 0.2 seconds per sentence. Since it drops corrected words, Parrot instead checks it added no words you didn't say. Run it on the model card examples with `TEST_RUNNER_PARROT_S1MINI=1 xcodebuild ... test -only-testing:ParrotTests/S1MiniCheck`.
 

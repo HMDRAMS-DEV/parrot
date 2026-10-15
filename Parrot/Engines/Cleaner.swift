@@ -26,16 +26,16 @@ enum CleanerID: String, CaseIterable, Identifiable {
 
     var name: String {
         switch self {
-        case .apple: "Apple Intelligence"
-        // The license asks for this exact name.
-        case .s1Mini: "S1-mini by Superwhisper"
+        case .apple: "Apple"
+        // The license asks for this exact name, credited to Superwhisper in `detail`.
+        case .s1Mini: "S1-mini"
         }
     }
 
     var detail: String {
         switch self {
-        case .apple: "Built into macOS. No download."
-        case .s1Mini: "Superwhisper, Aug 2026. Also fixes \"no, I mean\" and writes numbers, times, and emails. English. 630 MB download."
+        case .apple: "Apple Intelligence, built into macOS. No download."
+        case .s1Mini: "S1-mini by Superwhisper. Also fixes \"no, I mean\" and writes numbers, times, and emails. English only. Downloads 630 MB when you pick it."
         }
     }
 }

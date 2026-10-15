@@ -190,43 +190,50 @@ struct EnginePicker: View {
                 .labelsHidden()
                 .frame(width: pickerWidth)
             }
-            SettingRow("Fix punctuation, drop fillers") {
-                Toggle("Fix punctuation, drop fillers", isOn: $store.cleanupOn)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
-            }
-            .help("A small on-device model fixes punctuation and drops um and uh. If it changes your words, Parrot keeps the original.")
-            if store.cleanupOn {
-                SettingRow("Cleanup model", note: cleanerStatus) {
-                    Picker("Cleanup model", selection: $store.cleanerID) {
-                        ForEach(CleanerID.allCases) { Text($0.name).tag($0) }
-                    }
-                    .labelsHidden()
-                    .frame(width: pickerWidth)
+            .help(store.engineID.detail)
+            SettingRow("Cleanup", note: cleanerStatus) {
+                Picker("Cleanup", selection: cleaner) {
+                    Text("Off").tag(CleanerID?.none)
+                    ForEach(CleanerID.allCases) { Text($0.name).tag(Optional($0)) }
                 }
+                .labelsHidden()
+                .frame(width: pickerWidth)
             }
+            .help("Fixes punctuation and drops um and uh. If it changes your words, Parrot keeps the original." + (store.cleanupOn ? "\n\n" + store.cleanerID.detail : ""))
         }
     }
 
-    private var cleanerStatus: String {
+    /// Off, or which model cleans up. Off keeps the last model picked for next time.
+    private var cleaner: Binding<CleanerID?> {
+        Binding {
+            store.cleanupOn ? store.cleanerID : nil
+        } set: { id in
+            // Pick the model first, so turning cleanup on warms the right one.
+            if let id { store.cleanerID = id }
+            store.cleanupOn = id != nil
+        }
+    }
+
+    /// Only problems and loading. What each model is lives in the tooltip.
+    private var cleanerStatus: String? {
+        guard store.cleanupOn else { return nil }
         switch store.cleanerID {
-        case .apple where !AppleCleaner.isAvailable: "Needs Apple Intelligence, which is off or unsupported on this Mac."
+        case .apple where !AppleCleaner.isAvailable: return "Needs Apple Intelligence, which is off or unsupported on this Mac."
         case .s1Mini:
             switch store.cleanerState {
-            case .loading: "Loading the model. The first time, this includes a download."
-            case .failed(let message): "Couldn't load: \(message)"
-            case .ready, nil: store.cleanerID.detail
+            case .loading: return "Loading the model. The first time, this includes a download."
+            case .failed(let message): return "Couldn't load: \(message)"
+            case .ready, nil: return nil
             }
-        default: store.cleanerID.detail
+        default: return nil
         }
     }
 
-    private var status: String {
+    private var status: String? {
         switch store.engineStates[store.engineID] {
         case .loading: "Loading the model. The first time, this includes a download."
         case .failed(let message): "Couldn't load: \(message)"
-        case .ready, nil: store.engineID.detail
+        case .ready, nil: nil
         }
     }
 }
@@ -255,6 +262,7 @@ struct HandsFreeTile: View {
                     .toggleStyle(.switch)
                     .controlSize(.small)
             }
+            .help("Say “\(store.wakeWordName)”, then what you want typed. Stop talking for a second to finish.")
             if store.handsFreeOn {
                 SettingRow("Wake word") {
                     TextField("Wake word", text: $store.wakeWord, prompt: Text(WakeWord.standard))
@@ -267,10 +275,11 @@ struct HandsFreeTile: View {
         }
     }
 
-    private var status: String {
+    /// The status line up top already says what to say, so listening needs no note.
+    private var status: String? {
         switch store.handsFree {
         case .off, .loading: "Starting…"
-        case .listening: "Say “\(store.wakeWordName)”, then what you want typed. Stop talking for a second to finish."
+        case .listening: nil
         case .waitingForMic: store.inputUID == nil ? "Pick a microphone above. Parrot only listens hands-free on one you choose." : "Waiting for the microphone to connect."
         case .paused: "Paused while the screen is locked."
         case .failed(let message): "Stopped: \(message)"
@@ -288,10 +297,12 @@ private struct CallTile: View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 title.font(.system(size: 13, weight: .medium))
-                Text(detail)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if let detail {
+                    Text(detail)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer()
             switch store.callState {
@@ -308,6 +319,7 @@ private struct CallTile: View {
         }
         .padding(12)
         .tile()
+        .help("Records you and the other side, then writes a summary. Everything stays on this Mac.")
     }
 
     @ViewBuilder private var title: some View {
@@ -320,12 +332,12 @@ private struct CallTile: View {
         }
     }
 
-    private var detail: String {
+    private var detail: String? {
         let lines = store.call?.lines.count ?? 0
         switch store.callState {
         case .off:
             if let call = store.call, call.summary != nil { return "Summary ready: \(call.title)" }
-            return "Records you and the other side, then writes a summary. Everything stays on this Mac."
+            return nil
         case .recording:
             return lines == 0 ? "Listening to both sides." : "\(lines) lines so far." + (store.callBacklog > 2 ? " Catching up." : "")
         case .finishing:
