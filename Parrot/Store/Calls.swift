@@ -20,15 +20,17 @@ struct Call: Codable, Identifiable, Hashable {
 
     var id = UUID()
     var started: Date
+    /// The calendar event's title, for a call started from its reminder.
+    var meeting: String?
     var ended: Date?
     var lines: [Line] = []
     var summary: String?
 
     var duration: TimeInterval { (ended ?? .now).timeIntervalSince(started) }
 
-    /// The first line of the summary, which the summarizer writes as a title.
+    /// The meeting's title, or the first line of the summary, which the summarizer writes as a title.
     var title: String {
-        summary?.split(separator: "\n").first.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "# ")) } ?? "Call"
+        meeting ?? summary?.split(separator: "\n").first.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "# ")) } ?? "Call"
     }
 
     var transcript: String {

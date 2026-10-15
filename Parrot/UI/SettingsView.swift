@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Parrot's settings: the popover's model and hands-free controls, plus managing downloaded models.
+/// Parrot's settings: the popover's model and hands-free controls, meeting reminders, and
+/// managing downloaded models.
 struct SettingsView: View {
     var body: some View {
         TabView {
@@ -8,6 +9,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     EnginePicker()
                     HandsFreeTile()
+                    MeetingsTile()
                     Spacer(minLength: 0)
                 }
                 .padding(20)

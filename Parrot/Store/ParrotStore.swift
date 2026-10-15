@@ -51,6 +51,7 @@ final class ParrotStore {
     let history = History()
     let vocabulary = Vocabulary()
     let calls = Calls()
+    let meetings = Meetings()
     private(set) var callState = CallState.off
     /// Utterances from the current call still waiting to be transcribed.
     private(set) var callBacklog = 0
@@ -127,6 +128,10 @@ final class ParrotStore {
     @ObservationIgnored private var cancelledStart: Date?
     @ObservationIgnored private let capture = CallCapture()
     @ObservationIgnored private var callWork: [Task<Void, Never>] = []
+    /// When either side of the call last said something, and when its meeting is scheduled to end.
+    @ObservationIgnored private var lastHeard = Date.now
+    @ObservationIgnored private var callEnds: Date?
+    @ObservationIgnored private var callWatch: Task<Void, Never>?
     @ObservationIgnored private let appleCleaner = AppleCleaner()
     @ObservationIgnored private let s1Mini = S1MiniCleaner()
 
@@ -159,6 +164,8 @@ final class ParrotStore {
         }
         watchScreen()
         updateListener()
+        meetings.onTakeNotes = { [weak self] in self?.takeNotes($0) }
+        meetings.start()
         if !Permissions.accessibility { Permissions.promptForAccessibility() }
         // Accessibility is granted in System Settings with no callback, so check back now and then.
         Task {
@@ -468,17 +475,23 @@ final class ParrotStore {
 
     // MARK: Calls
 
+    /// Joins a meeting and records it, from its reminder or the menu.
+    func takeNotes(_ meeting: Meeting) {
+        NSWorkspace.shared.open(meeting.link)
+        startCall(meeting: meeting)
+    }
+
     /// Records both sides of a call and transcribes it as it goes. Uses the chosen microphone if
     /// it's connected, otherwise the system default.
-    func startCall() {
+    func startCall(meeting: Meeting? = nil) {
         guard callState == .off else { return }
         guard Permissions.microphone == .authorized else {
             Task {
-                if await Permissions.requestMicrophone() { startCall() } else { notice = "Parrot needs the microphone to record your side of a call." }
+                if await Permissions.requestMicrophone() { startCall(meeting: meeting) } else { notice = "Parrot needs the microphone to record your side of a call." }
             }
             return
         }
-        let call = Call(started: .now)
+        let call = Call(started: .now, meeting: meeting?.title)
         self.call = call
         do {
             try capture.start(mic: input) { [weak self] speaker, utterance in
@@ -494,11 +507,29 @@ final class ParrotStore {
         calls.save(call)
         callState = .recording(since: call.started)
         notice = nil
+        lastHeard = .now
+        callEnds = meeting?.end
+        callWatch = Task {
+            while !Task.isCancelled, case .recording = callState {
+                if Self.callIsOver(scheduledEnd: callEnds, lastHeard: lastHeard, now: .now) { stopCall() }
+                try? await Task.sleep(for: .seconds(15))
+            }
+        }
+    }
+
+    /// A call stops itself once its meeting is over and both sides have been quiet for 2 minutes,
+    /// and any call after 15 quiet minutes, so a forgotten recording ends.
+    nonisolated static func callIsOver(scheduledEnd: Date?, lastHeard: Date, now: Date) -> Bool {
+        let quiet = now.timeIntervalSince(lastHeard)
+        if let scheduledEnd, now >= scheduledEnd, quiet >= 120 { return true }
+        return quiet >= 15 * 60
     }
 
     func stopCall() {
         guard case .recording = callState else { return }
         callState = .finishing
+        callWatch?.cancel()
+        callWatch = nil
         Task {
             await capture.stop()
             for work in callWork { await work.value }
@@ -529,6 +560,7 @@ final class ParrotStore {
     }
 
     private func transcribe(_ utterance: WakeListener.Utterance, from speaker: Call.Speaker) {
+        lastHeard = .now
         callBacklog += 1
         let id = engineID
         callWork.append(Task {
@@ -622,6 +654,8 @@ enum Keys {
     static let cleanup = "cleanup"
     static let cleaner = "cleaner"
     static let wakeWord = "wakeWord"
+    static let meetings = "meetings"
+    static let meetingCalendar = "meetingCalendar"
 }
 
 /// Short sounds for start, stop, and cancel: deep parrot calls for start and cancel, a soft

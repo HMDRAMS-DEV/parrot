@@ -16,6 +16,7 @@ Local dictation for the macOS menu bar. Say "Oy" or tap Option, speak, and Parro
   History keeps both the cleaned and the original text.
 - **Vocabulary.** Names and jargon Parrot should spell your way, each with how it mishears them. Parakeet engines listen for the terms with FluidAudio's CTC boosting, aliases are swapped in every transcript, and cleanup gets them as spelling hints.
 - **Call notes.** Record in the popover when a call starts. Parrot records your mic as "You" and everything the Mac plays as "Them", transcribes both as the call goes, and writes a summary with decisions and action items when you stop. Only text is kept. Use headphones: on speakers, the mic hears the other side too (Parrot drops obvious echoes).
+- **Meeting reminders.** Turn on in Settings. A minute before a Google Meet, Zoom, Teams, Webex, or FaceTime call on your calendar (all calendars, or the one you pick), Parrot sends a notification. Take notes opens the link and starts recording; the popover shows the latest line as it's said. A call stops itself once its meeting is over and both sides have been quiet for 2 minutes, and any call stops after 15 quiet minutes.
 
 ## Models
 
@@ -54,6 +55,7 @@ Parrot keeps recordings for the latest 300 dictations, in `~/Library/Application
 
 - **Microphone**, asked for the first time you dictate.
 - **System Audio Recording Only**, asked for the first time you record a call. If it's denied, the "Them" side stays silent. Change it in System Settings > Privacy & Security > Screen & System Audio Recording.
+- **Calendars** and **Notifications**, asked when you turn on meeting reminders. Parrot only reads events.
 - **Accessibility**, to see the Option key in other apps and to press Command-V. Without it, Parrot only hears Option while its own popover is open, and it copies instead of pasting.
 
 Debug and Release builds are both signed with the HMDFV Inc. Developer ID, so the grants survive rebuilds.

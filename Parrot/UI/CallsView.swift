@@ -67,37 +67,46 @@ private struct CallDetail: View {
 
     var body: some View {
         let shown = store.call?.id == call.id ? store.call ?? call : call
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                summary(shown)
-                Divider()
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Transcript").font(.system(size: 13, weight: .semibold))
-                        Spacer()
-                        Button("Copy") { onCopy(shown.transcript) }.disabled(shown.lines.isEmpty)
-                    }
-                    if shown.lines.isEmpty {
-                        Text("No words yet.").font(.system(size: 13)).foregroundStyle(.secondary)
-                    }
-                    ForEach(Array(shown.lines.enumerated()), id: \.offset) { _, line in
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Text(line.speaker.label)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(line.speaker == .you ? Color.accentColor : .secondary)
-                                .frame(width: 40, alignment: .leading)
-                            Text(line.text)
-                                .font(.system(size: 14))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    summary(shown)
+                    Divider()
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("Transcript").font(.system(size: 13, weight: .semibold))
+                            Spacer()
+                            Button("Copy") { onCopy(shown.transcript) }.disabled(shown.lines.isEmpty)
+                        }
+                        if shown.lines.isEmpty {
+                            Text("No words yet.").font(.system(size: 13)).foregroundStyle(.secondary)
+                        }
+                        ForEach(Array(shown.lines.enumerated()), id: \.offset) { _, line in
+                            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                                Text(line.speaker.label)
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(line.speaker == .you ? Color.accentColor : .secondary)
+                                    .frame(width: 40, alignment: .leading)
+                                Text(line.text)
+                                    .font(.system(size: 14))
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                         }
                     }
                 }
+                .padding(20)
+                .frame(maxWidth: 720, alignment: .leading)
+                Color.clear.frame(height: 0).id(Self.end)
             }
-            .padding(20)
-            .frame(maxWidth: 720, alignment: .leading)
+            // Follow a live call as its lines come in.
+            .onChange(of: shown.lines.count) {
+                if shown.ended == nil { proxy.scrollTo(Self.end, anchor: .bottom) }
+            }
         }
     }
+
+    private static let end = "end"
 
     @ViewBuilder private func summary(_ call: Call) -> some View {
         VStack(alignment: .leading, spacing: 10) {

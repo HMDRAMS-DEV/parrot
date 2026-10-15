@@ -188,6 +188,7 @@ struct EnginePicker: View {
                     ForEach(EngineID.allCases) { Text($0.name).tag($0) }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
                 .frame(width: pickerWidth)
             }
             .help(store.engineID.detail)
@@ -197,6 +198,7 @@ struct EnginePicker: View {
                     ForEach(CleanerID.allCases) { Text($0.name).tag(Optional($0)) }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
                 .frame(width: pickerWidth)
             }
             .help("Fixes punctuation and drops um and uh. If it changes your words, Parrot keeps the original." + (store.cleanupOn ? "\n\n" + store.cleanerID.detail : ""))
@@ -254,6 +256,7 @@ struct HandsFreeTile: View {
                     }
                 }
                 .labelsHidden()
+                .buttonSizing(.flexible)
                 .frame(width: pickerWidth)
             }
             SettingRow("Listen for “\(store.wakeWordName)”", note: store.handsFreeOn ? status : nil) {
@@ -287,6 +290,48 @@ struct HandsFreeTile: View {
     }
 }
 
+/// Reminders before calls on the calendar, and which calendar to watch.
+struct MeetingsTile: View {
+    @Environment(ParrotStore.self) private var store
+
+    var body: some View {
+        @Bindable var meetings = store.meetings
+        SettingsTile {
+            SettingRow("Meeting reminders", note: meetings.on ? problem : nil) {
+                Toggle("Meeting reminders", isOn: $meetings.on)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+            }
+            .help("A minute before a Google Meet, Zoom, or Teams call on your calendar, Parrot offers to join it and take notes.")
+            if meetings.on, meetings.calendarAccess == .fullAccess {
+                SettingRow("Calendar") {
+                    Picker("Calendar", selection: $meetings.calendarID) {
+                        Text("All calendars").tag(String?.none)
+                        ForEach(meetings.calendars) { Text($0.title).tag(Optional($0.id)) }
+                        if let id = meetings.calendarID, !meetings.calendars.contains(where: { $0.id == id }) {
+                            Text("Not found").tag(Optional(id))
+                        }
+                    }
+                    .labelsHidden()
+                    .buttonSizing(.flexible)
+                    .frame(width: pickerWidth)
+                }
+            }
+            if meetings.on, problem != nil {
+                Button("Open System Settings") { meetings.openSettings() }.buttonStyle(PillButtonStyle())
+            }
+        }
+    }
+
+    private var problem: String? {
+        switch store.meetings.calendarAccess {
+        case .notDetermined, .fullAccess: store.meetings.notificationsAllowed ? nil : "Notifications are off for Parrot."
+        default: "Parrot can't see your calendar."
+        }
+    }
+}
+
 /// Record a call, see how it's going, and open the summary when it's done.
 private struct CallTile: View {
     @Environment(ParrotStore.self) private var store
@@ -301,17 +346,23 @@ private struct CallTile: View {
                     Text(detail)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
+                        .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             Spacer()
             switch store.callState {
             case .off:
-                if let call = store.call, call.summary != nil {
-                    Button("Open") { openCalls() }.buttonStyle(.borderless).font(.system(size: 13))
+                if let meeting = store.meetings.current {
+                    Button("Take notes") { store.takeNotes(meeting) }.buttonStyle(PillButtonStyle())
+                } else {
+                    if let call = store.call, call.summary != nil {
+                        Button("Open") { openCalls() }.buttonStyle(.borderless).font(.system(size: 13))
+                    }
+                    Button("Record") { store.startCall() }.buttonStyle(PillButtonStyle())
                 }
-                Button("Record") { store.startCall() }.buttonStyle(PillButtonStyle())
             case .recording:
+                Button("Open") { openCalls() }.buttonStyle(.borderless).font(.system(size: 13))
                 Button("Stop") { store.stopCall() }.buttonStyle(PillButtonStyle())
             case .finishing, .summarizing:
                 ProgressView().controlSize(.small)
@@ -327,19 +378,26 @@ private struct CallTile: View {
             TimelineView(.periodic(from: since, by: 1)) { context in
                 Text("Recording call \(Format.clock(since: since, now: context.date))").monospacedDigit()
             }
+        } else if store.callState == .off, let meeting = store.meetings.current {
+            Text(meeting.title).lineLimit(1)
         } else {
             Text("Call notes")
         }
     }
 
     private var detail: String? {
-        let lines = store.call?.lines.count ?? 0
         switch store.callState {
         case .off:
+            if let meeting = store.meetings.current {
+                let time = meeting.start.formatted(date: .omitted, time: .shortened)
+                return meeting.start > .now ? "\(meeting.service) at \(time)" : "\(meeting.service), started at \(time)"
+            }
             if let call = store.call, call.summary != nil { return "Summary ready: \(call.title)" }
             return nil
         case .recording:
-            return lines == 0 ? "Listening to both sides." : "\(lines) lines so far." + (store.callBacklog > 2 ? " Catching up." : "")
+            // The latest line, so the call reads live from the menu.
+            guard let line = store.call?.lines.last else { return "Listening to both sides." }
+            return (store.callBacklog > 2 ? "Catching up. " : "") + "\(line.speaker.label): \(line.text)"
         case .finishing:
             return "Writing down the last words…"
         case .summarizing:
@@ -353,7 +411,8 @@ private struct CallTile: View {
     }
 }
 
-/// Every menu in the popover is this wide, so their edges line up.
+/// Every menu in the popover is this wide, so their edges line up. Menus hug their
+/// text unless sized `.flexible`.
 private let pickerWidth: CGFloat = 160
 
 /// A tile of setting rows, evenly spaced.
