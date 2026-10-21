@@ -41,9 +41,27 @@ final class ParrotStore {
     }
 
     private(set) var phase = Phase.idle
+    /// A model picked in the popover that isn't on this Mac yet. Parrot asks before downloading it.
+    enum PendingDownload: Equatable {
+        case engine(EngineID)
+        case cleaner(CleanerID)
+
+        var name: String {
+            switch self {
+            case .engine(let id): id.name
+            case .cleaner(let id): id.name
+            }
+        }
+    }
+
     private(set) var engineStates: [EngineID: EngineState] = [:]
+    /// How far each loading engine has come, 0 to 1, when it can tell.
+    private(set) var engineProgress: [EngineID: Double] = [:]
     /// S1-mini's load. Apple's model needs none.
     private(set) var cleanerState: EngineState?
+    /// How far S1-mini's download has come, 0 to 1.
+    private(set) var cleanerProgress: Double?
+    var pendingDownload: PendingDownload?
     /// The last problem worth showing, cleared by the next successful dictation.
     private(set) var notice: String?
     private(set) var accessibility = Permissions.accessibility
@@ -287,12 +305,32 @@ final class ParrotStore {
         cleanerState = .loading
         Task {
             do {
-                _ = try await s1Mini.load()
+                _ = try await s1Mini.load { fraction in
+                    Task { @MainActor in
+                        if self.cleanerState == .loading { self.cleanerProgress = fraction }
+                    }
+                }
                 cleanerState = .ready
             } catch {
                 cleanerState = .failed(error.localizedDescription)
             }
+            cleanerProgress = nil
         }
+    }
+
+    /// Picks the model the popover asked about, which starts its download.
+    func confirmDownload() {
+        switch pendingDownload {
+        case .engine(let id):
+            engineID = id
+        case .cleaner(let id):
+            // Pick the model first, so turning cleanup on warms the right one.
+            cleanerID = id
+            cleanupOn = true
+        case nil:
+            break
+        }
+        pendingDownload = nil
     }
 
     // MARK: Hands-free
@@ -587,12 +625,17 @@ final class ParrotStore {
             engineStates[id] = .loading
             let task = Task<any TranscriptionEngine, any Error> {
                 let engine = id.make()
-                try await engine.prepare()
+                try await engine.prepare { fraction in
+                    Task { @MainActor in
+                        if self.engineStates[id] == .loading { self.engineProgress[id] = fraction }
+                    }
+                }
                 return engine
             }
             loads[id] = task
             return task
         }()
+        defer { engineProgress[id] = nil }
         do {
             let engine = try await task.value
             engines[id] = engine

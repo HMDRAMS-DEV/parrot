@@ -10,8 +10,8 @@ Local dictation for the macOS menu bar. Say "Oy" or tap Option, speak, and Parro
 - **History.** Every dictation, searchable, with the model used, recording length, and how long the text took.
 - **Local models, your pick.** Parakeet Ultra by default. Switch in the popover.
 - **Cleanup.** A small on-device model fixes punctuation and capitals and drops um and uh. Pick one under Cleanup, or Off:
+  - S1-mini by Superwhisper, the default (Qwen3 0.6B, Apache 2.0), run with MLX. It also resolves self-corrections ("forty two no sorry forty three" becomes "43") and writes numbers, times, and emails. English. A 630 MB download to `~/Library/Application Support/Parrot/Models` on first launch. Dictations skip cleanup until it's ready, then about 0.2 seconds per sentence. Since it drops corrected words, Parrot instead checks it added no words you didn't say. Run it on the model card examples with `TEST_RUNNER_PARROT_S1MINI=1 xcodebuild ... test -only-testing:ParrotTests/S1MiniCheck`.
   - Apple Intelligence, built into macOS, about a second. If its output strays from your words (it answered a dictated question in testing), Parrot pastes the original.
-  - S1-mini by Superwhisper (Qwen3 0.6B, Apache 2.0), run with MLX. It also resolves self-corrections ("forty two no sorry forty three" becomes "43") and writes numbers, times, and emails. English. A 630 MB download to `~/Library/Application Support/Parrot/Models` on first use, then about 0.2 seconds per sentence. Since it drops corrected words, Parrot instead checks it added no words you didn't say. Run it on the model card examples with `TEST_RUNNER_PARROT_S1MINI=1 xcodebuild ... test -only-testing:ParrotTests/S1MiniCheck`.
 
   History keeps both the cleaned and the original text.
 - **Vocabulary.** Names and jargon Parrot should spell your way, each with how it mishears them. Parakeet engines listen for the terms with FluidAudio's CTC boosting, aliases are swapped in every transcript, and cleanup gets them as spelling hints.
@@ -29,7 +29,7 @@ Local dictation for the macOS menu bar. Say "Oy" or tap Option, speak, and Parro
 | Parakeet v2 | 2025, NVIDIA | English | |
 | Apple Speech | macOS 26 | System language | Built in. No download. |
 
-The Parakeet family runs on the Neural Engine through [FluidAudio](https://github.com/FluidInference/FluidAudio). Models download once to `~/Library/Application Support/FluidAudio/Models`. Each downloads the first time you pick it. **Settings > Models** (Settings in the popover footer, or ⌘,) shows what each takes on disk and deletes the ones you don't use, which also unloads them from memory. The model in use can't be deleted.
+The Parakeet family runs on the Neural Engine through [FluidAudio](https://github.com/FluidInference/FluidAudio). Models download once to `~/Library/Application Support/FluidAudio/Models`. Picking one that isn't downloaded asks first, then the popover shows how far the download and load have come. **Settings > Models** (Settings in the popover footer, or ⌘,) shows what each takes on disk and deletes the ones you don't use, which also unloads them from memory. The model in use can't be deleted.
 
 ### Adding a model
 

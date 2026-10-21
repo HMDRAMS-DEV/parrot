@@ -57,6 +57,25 @@ struct PopoverView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if let pending = store.pendingDownload {
+                VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Download \(pending.name)?").font(.system(size: 13, weight: .semibold))
+                        Text("It downloads once and stays on this Mac.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack {
+                        Spacer()
+                        Button("Cancel") { store.pendingDownload = nil }.buttonStyle(PillButtonStyle(prominent: false))
+                        Button("Download") { store.confirmDownload() }.buttonStyle(PillButtonStyle())
+                    }
+                }
+                .padding(12)
+                .tile()
+            }
+
             EnginePicker()
 
             HandsFreeTile()
@@ -181,10 +200,9 @@ struct EnginePicker: View {
     @Environment(ParrotStore.self) private var store
 
     var body: some View {
-        @Bindable var store = store
         SettingsTile {
             SettingRow("Model", note: status) {
-                Picker("Model", selection: $store.engineID) {
+                Picker("Model", selection: engine) {
                     ForEach(EngineID.allCases) { Text($0.name).tag($0) }
                 }
                 .labelsHidden()
@@ -205,11 +223,24 @@ struct EnginePicker: View {
         }
     }
 
+    /// The picked model, or a question first when it isn't downloaded.
+    private var engine: Binding<EngineID> {
+        Binding {
+            store.engineID
+        } set: { id in
+            if id.isDownloaded { store.engineID = id } else { store.pendingDownload = .engine(id) }
+        }
+    }
+
     /// Off, or which model cleans up. Off keeps the last model picked for next time.
     private var cleaner: Binding<CleanerID?> {
         Binding {
             store.cleanupOn ? store.cleanerID : nil
         } set: { id in
+            if let id, !id.isDownloaded {
+                store.pendingDownload = .cleaner(id)
+                return
+            }
             // Pick the model first, so turning cleanup on warms the right one.
             if let id { store.cleanerID = id }
             store.cleanupOn = id != nil
@@ -223,7 +254,7 @@ struct EnginePicker: View {
         case .apple where !AppleCleaner.isAvailable: return "Needs Apple Intelligence, which is off or unsupported on this Mac."
         case .s1Mini:
             switch store.cleanerState {
-            case .loading: return "Loading the model. The first time, this includes a download."
+            case .loading: return loading(store.cleanerProgress) + " Dictation works meanwhile, without cleanup."
             case .failed(let message): return "Couldn't load: \(message)"
             case .ready, nil: return nil
             }
@@ -233,10 +264,15 @@ struct EnginePicker: View {
 
     private var status: String? {
         switch store.engineStates[store.engineID] {
-        case .loading: "Loading the model. The first time, this includes a download."
+        case .loading: loading(store.engineProgress[store.engineID])
         case .failed(let message): "Couldn't load: \(message)"
         case .ready, nil: nil
         }
+    }
+
+    private func loading(_ progress: Double?) -> String {
+        guard let progress, progress < 1 else { return "Loading the model…" }
+        return "Loading the model, \(Int(progress * 100))%."
     }
 }
 

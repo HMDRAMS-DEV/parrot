@@ -6,6 +6,9 @@ import Foundation
 /// model and may take a while the first time; Parrot calls it once per engine and keeps it loaded.
 protocol TranscriptionEngine: Actor {
     func prepare() async throws
+    /// The same, reporting how far the download and load have come, 0 to 1. Engines that can't
+    /// tell report nothing.
+    func prepare(progress: @escaping @Sendable (Double) -> Void) async throws
     func transcribe(_ samples: [Float]) async throws -> String
     /// Terms to listen for. Engines that can't bias toward words ignore this; Parrot still
     /// swaps aliases in every transcript.
@@ -13,6 +16,10 @@ protocol TranscriptionEngine: Actor {
 }
 
 extension TranscriptionEngine {
+    func prepare(progress: @escaping @Sendable (Double) -> Void) async throws {
+        try await prepare()
+    }
+
     func useVocabulary(_ terms: [VocabTerm]) async {}
 }
 

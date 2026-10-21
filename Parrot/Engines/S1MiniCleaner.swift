@@ -18,11 +18,17 @@ actor S1MiniCleaner: Cleaner {
 
     private var loading: Task<ModelContainer, any Error>?
 
-    /// Downloads the model if needed and loads it. Safe to call again.
-    func load() async throws -> ModelContainer {
+    /// Whether picking it needs a download first.
+    static var isDownloaded: Bool {
+        FileManager.default.fileExists(atPath: folder.appending(path: "models--" + repo.replacingOccurrences(of: "/", with: "--")).path)
+    }
+
+    /// Downloads the model if needed and loads it. Safe to call again. `progress` reports the
+    /// download, 0 to 1, to the first caller only.
+    func load(progress: @escaping @Sendable (Double) -> Void = { _ in }) async throws -> ModelContainer {
         let task = loading ?? Task {
             let hub = HubClient(cache: HubCache(cacheDirectory: Self.folder))
-            return try await loadModelContainer(from: HubDownloader(hub: hub), using: TokenizerLoader(), id: Self.repo)
+            return try await loadModelContainer(from: HubDownloader(hub: hub), using: TokenizerLoader(), id: Self.repo) { progress($0.fractionCompleted) }
         }
         loading = task
         do {

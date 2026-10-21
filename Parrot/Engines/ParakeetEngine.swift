@@ -15,8 +15,13 @@ actor ParakeetEngine: TranscriptionEngine {
     }
 
     func prepare() async throws {
+        try await prepare(progress: { _ in })
+    }
+
+    /// FluidAudio counts the download as the first half and compiling for the Neural Engine as the second.
+    func prepare(progress: @escaping @Sendable (Double) -> Void) async throws {
         guard manager == nil else { return }
-        let models = try await AsrModels.downloadAndLoad(version: version)
+        let models = try await AsrModels.downloadAndLoad(version: version, progressHandler: { progress($0.fractionCompleted) })
         let manager = AsrManager(config: .default)
         try await manager.loadModels(models)
         self.manager = manager
@@ -74,6 +79,11 @@ extension EngineID {
         case .apple: return nil
         }
         return AsrModels.defaultCacheDirectory(for: version)
+    }
+
+    /// Whether picking it needs a download first.
+    var isDownloaded: Bool {
+        downloadFolder.map { FileManager.default.fileExists(atPath: $0.path) } ?? true
     }
 
     /// Bytes the download takes on disk, or nil when it isn't downloaded.

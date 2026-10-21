@@ -18,11 +18,20 @@ extension Cleaner {
 }
 
 enum CleanerID: String, CaseIterable, Identifiable {
-    case apple, s1Mini
+    // The default first.
+    case s1Mini, apple
 
-    static let `default` = CleanerID.apple
+    static let `default` = CleanerID.s1Mini
 
     var id: String { rawValue }
+
+    /// Whether picking it needs a download first.
+    var isDownloaded: Bool {
+        switch self {
+        case .apple: true
+        case .s1Mini: S1MiniCleaner.isDownloaded
+        }
+    }
 
     var name: String {
         switch self {
@@ -35,7 +44,7 @@ enum CleanerID: String, CaseIterable, Identifiable {
     var detail: String {
         switch self {
         case .apple: "Apple Intelligence, built into macOS. No download."
-        case .s1Mini: "S1-mini by Superwhisper. Also fixes \"no, I mean\" and writes numbers, times, and emails. English only. Downloads 630 MB when you pick it."
+        case .s1Mini: "S1-mini by Superwhisper. Also fixes \"no, I mean\" and writes numbers, times, and emails. English only. Downloads 630 MB once, on first launch."
         }
     }
 }
