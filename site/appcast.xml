@@ -7,6 +7,15 @@
     <language>en</language>
     <!-- releases -->
     <item>
+      <title>Parrot 0.1.7</title>
+      <pubDate>Tue, 27 Oct 2026 21:25:21 +0000</pubDate>
+      <sparkle:version>8</sparkle:version>
+      <sparkle:shortVersionString>0.1.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Meeting reminders stay on screen with Join & take notes and Join only buttons, come two minutes early, and still arrive for calls that sync to your calendar late. The Calls window opens on a finished call's summary. Parrot asks before downloading a model and shows load progress, and cleanup defaults to S1-mini.</p>]]></description>
+      <enclosure url="https://github.com/HMDRAMS-DEV/parrot/releases/download/v0.1.7/Parrot.dmg" type="application/octet-stream" sparkle:edSignature="R0azX24jigZOQjNrrBwPxT/UulnQC5d5V5uUFrO8btkm3688WsPzAu4z4cxdpWopLMkt+np9wIDc7NbH7hQCAQ==" length="41810106"/>
+    </item>
+    <item>
       <title>Parrot 0.1.6</title>
       <pubDate>Thu, 15 Oct 2026 14:23:44 +0000</pubDate>
       <sparkle:version>7</sparkle:version>
