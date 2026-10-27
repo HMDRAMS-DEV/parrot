@@ -50,7 +50,7 @@ enum MeetingLink {
     }
 }
 
-/// Watches the calendar for calls and, a minute before each, offers to join it and take notes.
+/// Watches the calendar for calls and, two minutes before each, offers to join it and take notes.
 @MainActor @Observable
 final class Meetings {
     struct CalendarChoice: Identifiable, Hashable {
@@ -89,6 +89,7 @@ final class Meetings {
 
     nonisolated private static let category = "meeting"
     nonisolated private static let takeNotes = "takeNotes"
+    nonisolated private static let join = "join"
 
     init() {
         on = UserDefaults.standard.bool(forKey: Keys.meetings)
@@ -102,7 +103,10 @@ final class Meetings {
         center.delegate = notifications
         center.setNotificationCategories([UNNotificationCategory(
             identifier: Self.category,
-            actions: [UNNotificationAction(identifier: Self.takeNotes, title: "Take notes", options: [.foreground])],
+            actions: [
+                UNNotificationAction(identifier: Self.takeNotes, title: "Join & take notes", options: [.foreground]),
+                UNNotificationAction(identifier: Self.join, title: "Join only", options: []),
+            ],
             intentIdentifiers: []
         )])
         if on { begin() }
@@ -131,7 +135,7 @@ final class Meetings {
         current = nil
     }
 
-    /// Finds the current call and reminds about one starting within a minute.
+    /// Finds the current call and reminds about one starting within two minutes.
     private func check() {
         guard on, calendarAccess == .fullAccess else { return }
         let all = events.calendars(for: .event)
@@ -149,10 +153,11 @@ final class Meetings {
         }
     }
 
-    /// Remind from a minute before until two minutes after the start, in case the Mac was asleep.
+    /// Remind from two minutes before until ten minutes after the start, in case the Mac was asleep
+    /// or the event reached the calendar late.
     nonisolated static func isDue(_ meeting: Meeting, now: Date) -> Bool {
         let lead = meeting.start.timeIntervalSince(now)
-        return lead <= 60 && lead > -120
+        return lead <= 120 && lead > -600 && meeting.end > now
     }
 
     private static func meeting(_ event: EKEvent) -> Meeting? {
@@ -167,7 +172,9 @@ final class Meetings {
     private func remind(_ meeting: Meeting) {
         let content = UNMutableNotificationContent()
         content.title = meeting.title
-        content.body = "\(meeting.service) at \(meeting.start.formatted(date: .omitted, time: .shortened))"
+        let lead = Int((meeting.start.timeIntervalSinceNow / 60).rounded())
+        let when = lead > 0 ? "starts in \(lead) min" : lead == 0 ? "starts now" : "started \(-lead) min ago"
+        content.body = "\(meeting.service) \(when). Join & take notes?"
         content.sound = .default
         content.categoryIdentifier = Self.category
         content.userInfo = meeting.userInfo
@@ -182,7 +189,7 @@ final class Meetings {
         NSWorkspace.shared.open(URL(string: pane)!)
     }
 
-    /// Hands a click on a reminder to Parrot. Clicking the reminder itself also takes notes.
+    /// Hands a click on a reminder to Parrot. Clicking the reminder itself also joins and takes notes.
     @MainActor private final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         var onTakeNotes: (Meeting) -> Void = { _ in }
 
@@ -191,9 +198,12 @@ final class Meetings {
         }
 
         nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-            guard [Meetings.takeNotes, UNNotificationDefaultActionIdentifier].contains(response.actionIdentifier),
-                  let meeting = Meeting(userInfo: response.notification.request.content.userInfo) else { return }
-            await MainActor.run { onTakeNotes(meeting) }
+            guard let meeting = Meeting(userInfo: response.notification.request.content.userInfo) else { return }
+            switch response.actionIdentifier {
+            case Meetings.takeNotes, UNNotificationDefaultActionIdentifier: await MainActor.run { onTakeNotes(meeting) }
+            case Meetings.join: await MainActor.run { _ = NSWorkspace.shared.open(meeting.link) }
+            default: break
+            }
         }
     }
 }

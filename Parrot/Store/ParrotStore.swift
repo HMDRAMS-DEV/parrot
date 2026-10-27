@@ -75,6 +75,8 @@ final class ParrotStore {
     private(set) var callBacklog = 0
     /// The call being recorded, then the last one recorded.
     private(set) var call: Call?
+    /// The call that just finished, so the Calls window can open on its notes and summary.
+    private(set) var callToShow: Call.ID?
     /// Calls whose summary is being written.
     private(set) var summarizing: Set<UUID> = []
     private(set) var inputs: [AudioInput] = AudioInputs.all()
@@ -145,6 +147,8 @@ final class ParrotStore {
     /// The utterance that woke Parrot early, then was cancelled. Its ending is ignored.
     @ObservationIgnored private var cancelledStart: Date?
     @ObservationIgnored private let capture = CallCapture()
+    /// Opens the Calls window. Set by the menu bar, which has the openWindow action.
+    @ObservationIgnored var openCallsWindow: (() -> Void)?
     @ObservationIgnored private var callWork: [Task<Void, Never>] = []
     /// When either side of the call last said something, and when its meeting is scheduled to end.
     @ObservationIgnored private var lastHeard = Date.now
@@ -580,6 +584,11 @@ final class ParrotStore {
             callState = .summarizing
             await summarize(call)
             callState = .off
+            // Show the notes and summary once the call is over, even if summarizing failed and
+            // only the transcript is there.
+            callToShow = call.id
+            openCallsWindow?()
+            NSApp.activate()
         }
     }
 

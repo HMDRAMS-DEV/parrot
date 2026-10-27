@@ -2,10 +2,16 @@ import SwiftUI
 
 struct MenuBarLabel: View {
     @Environment(ParrotStore.self) private var store
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Image(nsImage: MenuBarIcon.image(for: store.phase, onCall: store.callState != .off))
-            .task { store.start() }
+            .task {
+                // The menu bar is always there, so it hands the store a way to open Calls when a
+                // call's summary is ready, even if the popover is closed.
+                store.openCallsWindow = { openWindow(id: WindowID.calls) }
+                store.start()
+            }
     }
 }
 
@@ -339,7 +345,7 @@ struct MeetingsTile: View {
                     .toggleStyle(.switch)
                     .controlSize(.small)
             }
-            .help("A minute before a Google Meet, Zoom, or Teams call on your calendar, Parrot offers to join it and take notes.")
+            .help("Two minutes before a Google Meet, Zoom, or Teams call on your calendar, Parrot offers to join it and take notes.")
             if meetings.on, meetings.calendarAccess == .fullAccess {
                 SettingRow("Calendar") {
                     Picker("Calendar", selection: $meetings.calendarID) {

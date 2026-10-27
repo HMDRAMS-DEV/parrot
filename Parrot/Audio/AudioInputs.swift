@@ -20,7 +20,8 @@ enum AudioInputs {
         return ids.compactMap { id in
             guard inputChannels(id) > 0,
                   let uid = string(id, kAudioDevicePropertyDeviceUID),
-                  let name = string(id, kAudioObjectPropertyName)
+                  let name = string(id, kAudioObjectPropertyName),
+                  name != SystemAudio.aggregateName
             else { return nil }
             return AudioInput(id: id, uid: uid, name: name)
         }

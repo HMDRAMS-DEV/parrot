@@ -8,6 +8,10 @@ import CoreAudio
 /// If that permission is denied, the tap still runs but hears silence.
 @MainActor
 final class SystemAudio {
+    /// The private aggregate device Parrot creates to read the tap. It isn't a microphone, so
+    /// Parrot leaves it out of the mic picker.
+    nonisolated static let aggregateName = "Parrot Call"
+
     private var tap = AudioObjectID(kAudioObjectUnknown)
     private var device = AudioObjectID(kAudioObjectUnknown)
     private var proc: AudioDeviceIOProcID?
@@ -35,7 +39,7 @@ final class SystemAudio {
         // A tap is read through a private aggregate device, clocked by the current output.
         let output = try Self.defaultOutputUID()
         let settings: [String: Any] = [
-            kAudioAggregateDeviceNameKey: "Parrot Call",
+            kAudioAggregateDeviceNameKey: Self.aggregateName,
             kAudioAggregateDeviceUIDKey: UUID().uuidString,
             kAudioAggregateDeviceMainSubDeviceKey: output,
             kAudioAggregateDeviceIsPrivateKey: true,

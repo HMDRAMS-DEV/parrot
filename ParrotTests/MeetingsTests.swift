@@ -28,11 +28,12 @@ struct MeetingTimingTests {
         Meeting(id: "a", title: "Standup", start: start, end: start.addingTimeInterval(1800), link: URL(string: "https://meet.google.com/abc-defg-hij")!)
     }
 
-    @Test func remindsFromAMinuteBefore() {
-        #expect(!Meetings.isDue(meeting(), now: start.addingTimeInterval(-61)))
-        #expect(Meetings.isDue(meeting(), now: start.addingTimeInterval(-60)))
-        #expect(Meetings.isDue(meeting(), now: start.addingTimeInterval(90)))
-        #expect(!Meetings.isDue(meeting(), now: start.addingTimeInterval(120)))
+    @Test func remindsFromTwoMinutesBeforeUntilTenAfter() {
+        #expect(!Meetings.isDue(meeting(), now: start.addingTimeInterval(-121)))
+        #expect(Meetings.isDue(meeting(), now: start.addingTimeInterval(-120)))
+        // An event that syncs in after the start still gets a reminder.
+        #expect(Meetings.isDue(meeting(), now: start.addingTimeInterval(540)))
+        #expect(!Meetings.isDue(meeting(), now: start.addingTimeInterval(600)))
     }
 
     @Test func reminderRoundTrips() {

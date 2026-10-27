@@ -17,9 +17,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.6</string>
+	<string>0.1.7</string>
 	<key>CFBundleVersion</key>
-	<string>7</string>
+	<string>8</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>LSUIElement</key>
@@ -27,13 +27,15 @@
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Parrot records the other side of a call so it can write a transcript and summary on this Mac.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Parrot looks for calls on your calendar, so it can remind you a minute before and take notes.</string>
+	<string>Parrot looks for calls on your calendar, so it can remind you two minutes before and take notes.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>MIT License</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Parrot listens while you dictate, then turns your speech into text on this Mac.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Parrot can use Apple's on-device speech recognizer to turn your speech into text.</string>
+	<key>NSUserNotificationAlertStyle</key>
+	<string>alert</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUFeedURL</key>

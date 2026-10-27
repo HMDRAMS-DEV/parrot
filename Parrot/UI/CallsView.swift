@@ -37,7 +37,11 @@ struct CallsView: View {
                 )
             }
         }
-        .onAppear { selection = selection ?? store.call?.id ?? store.calls.entries.first?.id }
+        .onAppear { selection = selection ?? store.call?.id ?? store.callToShow ?? store.calls.entries.first?.id }
+        // A call that just finished opens the window on its notes and summary.
+        .onChange(of: store.callToShow) { _, id in
+            if let id { selection = id }
+        }
         .confirmationDialog("Delete this call?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }), presenting: deleting) { call in
             Button("Delete", role: .destructive) {
                 store.calls.delete(call)

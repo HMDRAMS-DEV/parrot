@@ -44,8 +44,8 @@ targets:
       path: Parrot/Info.plist
       properties:
         CFBundleDisplayName: Parrot
-        CFBundleShortVersionString: "0.1.6"
-        CFBundleVersion: "7"
+        CFBundleShortVersionString: "0.1.7"
+        CFBundleVersion: "8"
         SUFeedURL: https://parrot.ramihmd.com/appcast.xml
         SUPublicEDKey: qOxwZqP7ofp2K4TUTCMqAA5P8EF/sbNrcEubiWKNHTE=
         SUEnableAutomaticChecks: true
@@ -53,9 +53,10 @@ targets:
         LSApplicationCategoryType: public.app-category.productivity
         NSMicrophoneUsageDescription: Parrot listens while you dictate, then turns your speech into text on this Mac.
         NSAudioCaptureUsageDescription: Parrot records the other side of a call so it can write a transcript and summary on this Mac.
-        NSCalendarsFullAccessUsageDescription: Parrot looks for calls on your calendar, so it can remind you a minute before and take notes.
+        NSCalendarsFullAccessUsageDescription: Parrot looks for calls on your calendar, so it can remind you two minutes before and take notes.
         NSSpeechRecognitionUsageDescription: Parrot can use Apple's on-device speech recognizer to turn your speech into text.
         NSHumanReadableCopyright: "MIT License"
+        NSUserNotificationAlertStyle: alert
     entitlements:
       path: Parrot/Parrot.entitlements
       properties:
