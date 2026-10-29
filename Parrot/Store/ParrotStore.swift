@@ -529,7 +529,11 @@ final class ParrotStore {
         guard callState == .off else { return }
         guard Permissions.microphone == .authorized else {
             Task {
-                if await Permissions.requestMicrophone() { startCall(meeting: meeting) } else { notice = "Parrot needs the microphone to record your side of a call." }
+                if await Permissions.requestMicrophone() {
+                    startCall(meeting: meeting)
+                } else {
+                    failed(meeting, "Parrot needs the microphone to record your side of a call.")
+                }
             }
             return
         }
@@ -543,7 +547,7 @@ final class ParrotStore {
             }
         } catch {
             self.call = nil
-            notice = error.localizedDescription
+            failed(meeting, error.localizedDescription)
             return
         }
         calls.save(call)
@@ -551,12 +555,27 @@ final class ParrotStore {
         notice = nil
         lastHeard = .now
         callEnds = meeting?.end
+        // Notes starting from a reminder should be unmistakable: the sound says Parrot is listening
+        // now, and the Calls window shows the lines as they're written.
+        if meeting != nil {
+            Sound.start.play()
+            callToShow = call.id
+            openCallsWindow?()
+        }
         callWatch = Task {
             while !Task.isCancelled, case .recording = callState {
                 if Self.callIsOver(scheduledEnd: callEnds, lastHeard: lastHeard, now: .now) { stopCall() }
                 try? await Task.sleep(for: .seconds(15))
             }
         }
+    }
+
+    /// Says why call notes didn't start. A reminder was clicked, so silence would read as Parrot
+    /// ignoring it.
+    private func failed(_ meeting: Meeting?, _ message: String) {
+        notice = message
+        guard meeting != nil else { return }
+        Notify.now(title: "Call notes didn't start", body: message)
     }
 
     /// A call stops itself once its meeting is over and both sides have been quiet for 2 minutes,

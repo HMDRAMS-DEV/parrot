@@ -44,6 +44,12 @@ struct ParrotApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // Before SwiftUI builds the store: a reminder that launched Parrot is handed to us now, and
+        // waiting until the menu bar appears would drop the click that opened the app.
+        MainActor.assumeIsolated { MeetingNotifications.shared.start() }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         _ = Updater.shared
     }

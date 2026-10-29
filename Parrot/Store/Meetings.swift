@@ -83,32 +83,17 @@ final class Meetings {
     /// Called when someone picks Take notes.
     @ObservationIgnored var onTakeNotes: (Meeting) -> Void = { _ in }
     @ObservationIgnored private let events = EKEventStore()
-    @ObservationIgnored private let notifications = NotificationDelegate()
     @ObservationIgnored private var reminded: Set<String> = []
     @ObservationIgnored private var loop: Task<Void, Never>?
-
-    nonisolated private static let category = "meeting"
-    nonisolated private static let takeNotes = "takeNotes"
-    nonisolated private static let join = "join"
 
     init() {
         on = UserDefaults.standard.bool(forKey: Keys.meetings)
         calendarID = UserDefaults.standard.string(forKey: Keys.meetingCalendar)
     }
 
-    /// Called once at launch. The delegate must be set before a click on an old reminder arrives.
+    /// Called once Parrot's store is up, to hand it the clicks on reminders.
     func start() {
-        let center = UNUserNotificationCenter.current()
-        notifications.onTakeNotes = { [weak self] in self?.onTakeNotes($0) }
-        center.delegate = notifications
-        center.setNotificationCategories([UNNotificationCategory(
-            identifier: Self.category,
-            actions: [
-                UNNotificationAction(identifier: Self.takeNotes, title: "Join & take notes", options: [.foreground]),
-                UNNotificationAction(identifier: Self.join, title: "Join only", options: []),
-            ],
-            intentIdentifiers: []
-        )])
+        MeetingNotifications.shared.onTakeNotes = { [weak self] in self?.onTakeNotes($0) }
         if on { begin() }
     }
 
@@ -176,7 +161,7 @@ final class Meetings {
         let when = lead > 0 ? "starts in \(lead) min" : lead == 0 ? "starts now" : "started \(-lead) min ago"
         content.body = "\(meeting.service) \(when). Join & take notes?"
         content.sound = .default
-        content.categoryIdentifier = Self.category
+        content.categoryIdentifier = MeetingNotifications.category
         content.userInfo = meeting.userInfo
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: meeting.id, content: content, trigger: nil))
     }
@@ -189,22 +174,77 @@ final class Meetings {
         NSWorkspace.shared.open(URL(string: pane)!)
     }
 
-    /// Hands a click on a reminder to Parrot. Clicking the reminder itself also joins and takes notes.
-    @MainActor private final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
-        var onTakeNotes: (Meeting) -> Void = { _ in }
+}
 
-        nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-            [.banner, .sound]
-        }
+/// Takes clicks on meeting reminders. Set up first thing at launch, before SwiftUI builds Parrot's
+/// store, so a reminder that starts Parrot keeps its click instead of losing it, and holds that
+/// click until the store is ready for it.
+@MainActor
+final class MeetingNotifications: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = MeetingNotifications()
 
-        nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
-            guard let meeting = Meeting(userInfo: response.notification.request.content.userInfo) else { return }
-            switch response.actionIdentifier {
-            case Meetings.takeNotes, UNNotificationDefaultActionIdentifier: await MainActor.run { onTakeNotes(meeting) }
-            case Meetings.join: await MainActor.run { _ = NSWorkspace.shared.open(meeting.link) }
-            default: break
-            }
+    nonisolated static let category = "meeting"
+    nonisolated static let takeNotes = "takeNotes"
+    nonisolated static let join = "join"
+
+    /// Called when someone picks Join & take notes, or clicks the reminder itself.
+    var onTakeNotes: ((Meeting) -> Void)? {
+        didSet {
+            guard let meeting = pending, let onTakeNotes else { return }
+            pending = nil
+            onTakeNotes(meeting)
         }
+    }
+
+    /// A click that arrived before Parrot was ready for it.
+    private var pending: Meeting?
+    private var started = false
+
+    func start() {
+        guard !started else { return }
+        started = true
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        center.setNotificationCategories([UNNotificationCategory(
+            identifier: Self.category,
+            actions: [
+                UNNotificationAction(identifier: Self.takeNotes, title: "Join & take notes", options: [.foreground]),
+                UNNotificationAction(identifier: Self.join, title: "Join only", options: []),
+            ],
+            intentIdentifiers: []
+        )])
+        // Asked here, once at launch, rather than from the calendar loop, so Parrot is registered
+        // with the notification system before the first reminder is posted.
+        if UserDefaults.standard.bool(forKey: Keys.meetings) {
+            Task { _ = try? await center.requestAuthorization(options: [.alert, .sound]) }
+        }
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+        [.banner, .list, .sound]
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        guard let meeting = Meeting(userInfo: response.notification.request.content.userInfo) else { return }
+        switch response.actionIdentifier {
+        case Self.takeNotes, UNNotificationDefaultActionIdentifier:
+            await MainActor.run { if let onTakeNotes { onTakeNotes(meeting) } else { pending = meeting } }
+        case Self.join:
+            await MainActor.run { _ = NSWorkspace.shared.open(meeting.link) }
+        default: break
+        }
+    }
+}
+
+/// A notification for something the person asked for that didn't happen, such as call notes that
+/// couldn't start. Parrot is a menu bar app, so there's nowhere else to say it.
+enum Notify {
+    @MainActor static func now(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
 }
 
