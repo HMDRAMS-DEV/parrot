@@ -7,6 +7,15 @@
     <language>en</language>
     <!-- releases -->
     <item>
+      <title>Parrot 0.1.8</title>
+      <pubDate>Thu, 29 Oct 2026 14:50:20 +0000</pubDate>
+      <sparkle:version>9</sparkle:version>
+      <sparkle:shortVersionString>0.1.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<p>Jointake notes from a reminder now shows it working: the start sound plays and the Calls window opens on the live transcript as it's written. If notes can't start, Parrot says why in a notification instead of failing silently. Reminder clicks are handled even when the notification launched Parrot, and notification permission is set up before the first reminder.</p>]]></description>
+      <enclosure url="https://github.com/HMDRAMS-DEV/parrot/releases/download/v0.1.8/Parrot.dmg" type="application/octet-stream" sparkle:edSignature="GIgWy7q6YIMy1q7BSqCZz8LqohYYrTCel9L5SRLjV+Cv/yif8HMUb1s66ae6f4xUYqPGVBjJbmYG5H9aCWfwBA==" length="41817458"/>
+    </item>
+    <item>
       <title>Parrot 0.1.7</title>
       <pubDate>Tue, 27 Oct 2026 21:25:21 +0000</pubDate>
       <sparkle:version>8</sparkle:version>
